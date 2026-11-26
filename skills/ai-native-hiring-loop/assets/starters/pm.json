@@ -1,0 +1,269 @@
+{
+  "version": "starter-pm-v1",
+  "illustrative": false,
+  "starter": true,
+  "role": {
+    "title": "Senior Product Manager, AI feature",
+    "level": "Senior",
+    "team": "A product squad shipping a feature where a model drafts or decides on the user's behalf"
+  },
+  "outcomes": [
+    {
+      "id": "O1",
+      "text": "The AI feature is used for the job it was built for, without a rise in the errors users report",
+      "measure": "share of eligible tasks completed with the feature, read beside reported errors",
+      "by_month": 9
+    },
+    {
+      "id": "O2",
+      "text": "Every release of the feature is gated by an eval suite the squad owns",
+      "measure": "releases that met the agreed pass line before shipping, out of all releases",
+      "by_month": 6
+    },
+    {
+      "id": "O3",
+      "text": "Cost per task stays inside the agreed budget as usage grows",
+      "measure": "model and tool spend per task against the budget line, monthly",
+      "by_month": 12
+    }
+  ],
+  "competencies": [
+    {
+      "id": "C1",
+      "name": "Outcome framing",
+      "description": "Turns a request into a problem, a definition of good, non-goals and a line that says whether it landed.",
+      "weight": 25,
+      "outcomes": [
+        "O1",
+        "O2"
+      ],
+      "anchors": {
+        "1": "Describes features to build; no measure of whether they worked.",
+        "2": "Names a metric but not a target, a window or what it would trade off.",
+        "3": "States the problem, a definition of good with a target and window, and at least one non-goal.",
+        "4": "Does all of 3, names the counter-metric that would show the win is false, and says which of value, usability, feasibility and viability is the biggest risk."
+      }
+    },
+    {
+      "id": "C2",
+      "name": "Eval design",
+      "description": "Writes evals that catch the failures that matter before a user does.",
+      "weight": 20,
+      "outcomes": [
+        "O2"
+      ],
+      "anchors": {
+        "1": "Relies on trying a few prompts by hand; no written cases.",
+        "2": "Writes happy-path cases only, or cases with no pass rule.",
+        "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+        "4": "Does all of 3, adds cases from real failure reports, and says how the suite stays honest as the model changes."
+      },
+      "ai_judgment": "evals",
+      "floor": 2.5
+    },
+    {
+      "id": "C3",
+      "name": "Cost judgment",
+      "description": "Weighs cost per task against the value of the task.",
+      "weight": 15,
+      "outcomes": [
+        "O3"
+      ],
+      "anchors": {
+        "1": "Does not consider cost.",
+        "2": "Mentions cost but cannot estimate it per task.",
+        "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+        "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+      },
+      "ai_judgment": "cost"
+    },
+    {
+      "id": "C4",
+      "name": "Restraint: knowing when not to use a model",
+      "description": "Keeps steps out of the model where rules, templates or a person are cheaper, safer or more accurate.",
+      "weight": 20,
+      "outcomes": [
+        "O2",
+        "O3"
+      ],
+      "anchors": {
+        "1": "Uses a model for every step, including arithmetic and irreversible actions.",
+        "2": "Accepts a non-model option only when prompted.",
+        "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+        "4": "Does all of 3 and sets the rule for when the step could move to a model later, with the evidence that would justify it."
+      },
+      "ai_judgment": "restraint",
+      "floor": 2.5
+    },
+    {
+      "id": "C5",
+      "name": "Continuous discovery",
+      "description": "Learns from users every week and tests the riskiest assumption before building.",
+      "weight": 20,
+      "outcomes": [
+        "O1"
+      ],
+      "anchors": {
+        "1": "Works from second-hand requests.",
+        "2": "Talks to users occasionally, after decisions.",
+        "3": "Has a weekly habit of user contact and names the assumption each conversation tested.",
+        "4": "Does all of 3 and can show a decision the evidence reversed."
+      }
+    }
+  ],
+  "stages": [
+    {
+      "id": "S1",
+      "name": "Work sample",
+      "kind": "work_sample",
+      "minutes": 90,
+      "min_scorers": 2,
+      "task": "You get 40 anonymised examples of what the feature produced and what the user did with it. In 90 minutes, write a one-page recommendation on whether to widen the feature: the eval cases that would gate it, the cost per task, which steps should not use a model, and the assumption you would test with users first. AI tools are allowed and expected; say where you used them.",
+      "criteria": [
+        {
+          "id": "W1",
+          "text": "Eval cases and pass line",
+          "competency": "C2",
+          "anchors": {
+            "1": "Relies on trying a few prompts by hand; no written cases.",
+            "2": "Writes happy-path cases only, or cases with no pass rule.",
+            "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+            "4": "Does all of 3, adds cases from real failure reports, and says how the suite stays honest as the model changes."
+          },
+          "ai_judgment": "evals"
+        },
+        {
+          "id": "W2",
+          "text": "Cost per task",
+          "competency": "C3",
+          "anchors": {
+            "1": "Does not consider cost.",
+            "2": "Mentions cost but cannot estimate it per task.",
+            "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+            "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+          },
+          "ai_judgment": "cost"
+        },
+        {
+          "id": "W3",
+          "text": "Steps kept out of the model",
+          "competency": "C4",
+          "anchors": {
+            "1": "Uses a model for every step, including arithmetic and irreversible actions.",
+            "2": "Accepts a non-model option only when prompted.",
+            "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+            "4": "Does all of 3 and sets the rule for when the step could move to a model later, with the evidence that would justify it."
+          },
+          "ai_judgment": "restraint"
+        },
+        {
+          "id": "W4",
+          "text": "Recommendation framed as an outcome",
+          "competency": "C1",
+          "anchors": {
+            "1": "A feature list.",
+            "2": "A goal with no target or window.",
+            "3": "A definition of good with a target and window, and non-goals.",
+            "4": "Does all of 3 and names the counter-metric and the rollback line."
+          }
+        },
+        {
+          "id": "W5",
+          "text": "Assumption to test with users first",
+          "competency": "C5",
+          "anchors": {
+            "1": "No assumption named.",
+            "2": "Names an assumption but no test.",
+            "3": "Names the riskiest assumption and a cheap test with users.",
+            "4": "Does all of 3 and says what result would stop the work."
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Structured interview: product judgment",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q1",
+          "text": "Tell me about a launch you led that did not land. How did you know, and what did you change?",
+          "competency": "C1",
+          "follow_ups": [
+            "What was the measure, and when did you read it?"
+          ]
+        },
+        {
+          "id": "Q2",
+          "text": "Describe the last time something a user said changed what you shipped.",
+          "competency": "C5",
+          "follow_ups": [
+            "How often do you talk to users now?"
+          ]
+        },
+        {
+          "id": "Q3",
+          "text": "A leader asks for the AI feature to cover twice as many cases next quarter. How do you decide what good looks like?",
+          "competency": "C1",
+          "follow_ups": [
+            "What would you not build?"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Structured interview: judgment in AI use",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q4",
+          "text": "Walk me through an eval suite you wrote or owned. What failure did it catch that a demo would have missed?",
+          "competency": "C2",
+          "follow_ups": [
+            "How did you set the pass line?"
+          ]
+        },
+        {
+          "id": "Q5",
+          "text": "The monthly model bill doubles while usage grows by half. What do you look at first?",
+          "competency": "C3",
+          "follow_ups": [
+            "What would you trade to bring it down?"
+          ]
+        },
+        {
+          "id": "Q6",
+          "text": "Tell me about a time you decided not to use a model for something a model could do.",
+          "competency": "C4",
+          "follow_ups": [
+            "What would have had to be true to use one?"
+          ]
+        },
+        {
+          "id": "Q7",
+          "text": "How do you find out which assumption behind an AI feature is most likely wrong?",
+          "competency": "C5",
+          "follow_ups": [
+            "Give a recent example."
+          ]
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "bar": 3.0,
+    "panel_min": 3,
+    "spread_flag": 2,
+    "steps": [
+      "Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.",
+      "Interviewers do not see each other's scores or discuss the candidate until the debrief starts.",
+      "The facilitator runs `run.py score` and shares the packet. Nobody states a view first.",
+      "For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.",
+      "Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.",
+      "The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent."
+    ]
+  }
+}

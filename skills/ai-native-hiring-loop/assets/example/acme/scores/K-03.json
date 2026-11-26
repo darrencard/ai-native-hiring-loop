@@ -1,6 +1,7 @@
 {
   "candidate": "K-03",
   "illustrative": true,
+  "timestamps_from": "form",
   "loop_version": "acme-spm-ai-2026-11",
   "debrief_started_at": "2026-11-20T17:00:00+00:00",
   "asked": {

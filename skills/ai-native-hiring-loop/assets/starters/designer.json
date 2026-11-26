@@ -1,0 +1,258 @@
+{
+  "version": "starter-designer-v1",
+  "illustrative": false,
+  "starter": true,
+  "role": {
+    "title": "Senior Product Designer, AI experiences",
+    "level": "Senior",
+    "team": "A product squad designing flows where a model suggests, drafts or acts for the user"
+  },
+  "outcomes": [
+    {
+      "id": "O1",
+      "text": "Users can tell what the model did, correct it and undo it",
+      "measure": "share of model actions users accept, edit or undo, read beside support contacts about the feature",
+      "by_month": 6
+    },
+    {
+      "id": "O2",
+      "text": "Design quality of model output is checked by evals, not by eye",
+      "measure": "design-owned eval cases in the release suite, and releases that met them",
+      "by_month": 9
+    },
+    {
+      "id": "O3",
+      "text": "The experience stays usable when the model is slow, wrong or unavailable",
+      "measure": "flows with a designed failure and fallback state, out of all model-backed flows",
+      "by_month": 12
+    }
+  ],
+  "competencies": [
+    {
+      "id": "C1",
+      "name": "Interaction design for uncertainty",
+      "description": "Designs for a model that is sometimes wrong: confidence, review, correction and undo.",
+      "weight": 25,
+      "outcomes": [
+        "O1",
+        "O3"
+      ],
+      "anchors": {
+        "1": "Designs the happy path only.",
+        "2": "Adds an error message but no way to correct or undo.",
+        "3": "Designs review, correction and undo, and a state for low confidence.",
+        "4": "Does all of 3 and decides where the user must confirm before the model acts, and why."
+      }
+    },
+    {
+      "id": "C2",
+      "name": "Eval design",
+      "description": "Turns design quality into eval cases with pass rules.",
+      "weight": 20,
+      "outcomes": [
+        "O2"
+      ],
+      "anchors": {
+        "1": "Relies on trying a few prompts by hand; no written cases.",
+        "2": "Writes happy-path cases only, or cases with no pass rule.",
+        "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+        "4": "Does all of 3, adds cases from real failure reports, and says how the suite stays honest as the model changes."
+      },
+      "ai_judgment": "evals",
+      "floor": 2.5
+    },
+    {
+      "id": "C3",
+      "name": "Cost judgment",
+      "description": "Knows that design choices (streaming, retries, regenerate buttons) change cost per task.",
+      "weight": 15,
+      "outcomes": [
+        "O2"
+      ],
+      "anchors": {
+        "1": "Does not consider cost.",
+        "2": "Mentions cost but cannot estimate it per task.",
+        "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+        "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+      },
+      "ai_judgment": "cost"
+    },
+    {
+      "id": "C4",
+      "name": "Restraint: knowing when not to use a model",
+      "description": "Chooses a template, a default or a plain form where a model adds risk or cost.",
+      "weight": 20,
+      "outcomes": [
+        "O1",
+        "O3"
+      ],
+      "anchors": {
+        "1": "Uses a model for every step, including arithmetic and irreversible actions.",
+        "2": "Accepts a non-model option only when prompted.",
+        "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+        "4": "Does all of 3 and sets the rule for when the step could move to a model later, with the evidence that would justify it."
+      },
+      "ai_judgment": "restraint",
+      "floor": 2.5
+    },
+    {
+      "id": "C5",
+      "name": "Research and evidence",
+      "description": "Tests designs with users and changes them on what users do.",
+      "weight": 20,
+      "outcomes": [
+        "O1"
+      ],
+      "anchors": {
+        "1": "Relies on own taste.",
+        "2": "Tests late, or only for usability defects.",
+        "3": "Tests early with users and names what each round changed.",
+        "4": "Does all of 3 and can show a design the evidence overturned."
+      }
+    }
+  ],
+  "stages": [
+    {
+      "id": "S1",
+      "name": "Work sample",
+      "kind": "work_sample",
+      "minutes": 90,
+      "min_scorers": 2,
+      "task": "You get a flow where a model drafts a message the user sends to their own customer, with 30 anonymised drafts and what users changed. In 90 minutes, redesign the review step: show the states (draft, low confidence, error, model unavailable), the eval cases that would check the drafts, what each regenerate or retry costs, and which parts should be a template instead of a model. AI tools are allowed and expected; say where you used them.",
+      "criteria": [
+        {
+          "id": "W1",
+          "text": "Eval cases for draft quality",
+          "competency": "C2",
+          "anchors": {
+            "1": "Relies on trying a few prompts by hand; no written cases.",
+            "2": "Writes happy-path cases only, or cases with no pass rule.",
+            "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+            "4": "Does all of 3, adds cases from real failure reports, and says how the suite stays honest as the model changes."
+          },
+          "ai_judgment": "evals"
+        },
+        {
+          "id": "W2",
+          "text": "Cost of regenerate and retry",
+          "competency": "C3",
+          "anchors": {
+            "1": "Does not consider cost.",
+            "2": "Mentions cost but cannot estimate it per task.",
+            "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+            "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+          },
+          "ai_judgment": "cost"
+        },
+        {
+          "id": "W3",
+          "text": "Parts kept as templates",
+          "competency": "C4",
+          "anchors": {
+            "1": "Uses a model for every step, including arithmetic and irreversible actions.",
+            "2": "Accepts a non-model option only when prompted.",
+            "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+            "4": "Does all of 3 and sets the rule for when the step could move to a model later, with the evidence that would justify it."
+          },
+          "ai_judgment": "restraint"
+        },
+        {
+          "id": "W4",
+          "text": "Review, correction and undo states",
+          "competency": "C1",
+          "anchors": {
+            "1": "Happy path only.",
+            "2": "An error state with no recovery.",
+            "3": "Draft, low-confidence, error and unavailable states, each with a way forward.",
+            "4": "Does all of 3 and places the confirm step where a wrong send would hurt most."
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Structured interview: design judgment",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q1",
+          "text": "Show me a design where the system could be wrong. How did the user find out and recover?",
+          "competency": "C1",
+          "follow_ups": [
+            "What did you leave out?"
+          ]
+        },
+        {
+          "id": "Q2",
+          "text": "Tell me about research that changed your design.",
+          "competency": "C5",
+          "follow_ups": [
+            "What did you expect to find?"
+          ]
+        },
+        {
+          "id": "Q3",
+          "text": "How do you decide when a user must confirm before the system acts?",
+          "competency": "C1",
+          "follow_ups": [
+            "Give an example where you got it wrong."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Structured interview: judgment in AI use",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q4",
+          "text": "How would you turn 'the drafts feel off' into something an eval can check?",
+          "competency": "C2",
+          "follow_ups": [
+            "Who writes the pass rule?"
+          ]
+        },
+        {
+          "id": "Q5",
+          "text": "A regenerate button doubles the cost of the feature. What do you do?",
+          "competency": "C3",
+          "follow_ups": [
+            "What would you measure first?"
+          ]
+        },
+        {
+          "id": "Q6",
+          "text": "Tell me about a time you replaced a model-driven element with something simpler.",
+          "competency": "C4",
+          "follow_ups": [
+            "What did you lose?"
+          ]
+        },
+        {
+          "id": "Q7",
+          "text": "How do you test a design whose output changes every time?",
+          "competency": "C5",
+          "follow_ups": [
+            "How many users is enough?"
+          ]
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "bar": 3.0,
+    "panel_min": 3,
+    "spread_flag": 2,
+    "steps": [
+      "Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.",
+      "Interviewers do not see each other's scores or discuss the candidate until the debrief starts.",
+      "The facilitator runs `run.py score` and shares the packet. Nobody states a view first.",
+      "For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.",
+      "Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.",
+      "The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent."
+    ]
+  }
+}

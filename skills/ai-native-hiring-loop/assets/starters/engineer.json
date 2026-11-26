@@ -1,0 +1,269 @@
+{
+  "version": "starter-engineer-v1",
+  "illustrative": false,
+  "starter": true,
+  "role": {
+    "title": "Senior Software Engineer, AI systems",
+    "level": "Senior",
+    "team": "A product squad building features on top of a model API, with agents writing much of the code"
+  },
+  "outcomes": [
+    {
+      "id": "O1",
+      "text": "Model-backed features ship behind an eval gate in CI",
+      "measure": "model-backed releases blocked or passed by the eval suite, out of all such releases",
+      "by_month": 6
+    },
+    {
+      "id": "O2",
+      "text": "Cost per task is known and inside budget",
+      "measure": "spend per task from logs against the budget line, monthly",
+      "by_month": 9
+    },
+    {
+      "id": "O3",
+      "text": "Agent-written changes meet the same quality bar as human-written ones",
+      "measure": "change failure rate and revert rate for agent-written changes against human-written ones",
+      "by_month": 12
+    }
+  ],
+  "competencies": [
+    {
+      "id": "C1",
+      "name": "System design and reliability",
+      "description": "Designs model-backed systems with timeouts, fallbacks, idempotency and observability.",
+      "weight": 25,
+      "outcomes": [
+        "O1",
+        "O3"
+      ],
+      "anchors": {
+        "1": "Calls the model inline with no failure handling.",
+        "2": "Adds retries but no fallback or limits.",
+        "3": "Designs timeouts, fallbacks, limits and logs that show what the model did.",
+        "4": "Does all of 3 and makes risky actions reversible or confirmable."
+      }
+    },
+    {
+      "id": "C2",
+      "name": "Eval design",
+      "description": "Builds eval suites that run in CI and catch regressions.",
+      "weight": 20,
+      "outcomes": [
+        "O1"
+      ],
+      "anchors": {
+        "1": "Relies on trying a few prompts by hand; no written cases.",
+        "2": "Writes happy-path cases only, or cases with no pass rule.",
+        "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+        "4": "Does all of 3, adds cases from real failure reports, and says how the suite stays honest as the model changes."
+      },
+      "ai_judgment": "evals",
+      "floor": 2.5
+    },
+    {
+      "id": "C3",
+      "name": "Cost judgment",
+      "description": "Measures and controls tokens per task and price per token.",
+      "weight": 15,
+      "outcomes": [
+        "O2"
+      ],
+      "anchors": {
+        "1": "Does not consider cost.",
+        "2": "Mentions cost but cannot estimate it per task.",
+        "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+        "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+      },
+      "ai_judgment": "cost"
+    },
+    {
+      "id": "C4",
+      "name": "Restraint: knowing when not to use a model",
+      "description": "Uses code, rules or search where a model is slower, costlier or less accurate.",
+      "weight": 20,
+      "outcomes": [
+        "O1",
+        "O2"
+      ],
+      "anchors": {
+        "1": "Uses a model for every step, including arithmetic and irreversible actions.",
+        "2": "Accepts a non-model option only when prompted.",
+        "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+        "4": "Does all of 3 and sets the rule for when the step could move to a model later, with the evidence that would justify it."
+      },
+      "ai_judgment": "restraint",
+      "floor": 2.5
+    },
+    {
+      "id": "C5",
+      "name": "Reviewing agent-written code",
+      "description": "Reviews and tests agent-written changes as hard as human ones.",
+      "weight": 20,
+      "outcomes": [
+        "O3"
+      ],
+      "anchors": {
+        "1": "Merges agent output after a skim.",
+        "2": "Reviews diffs but does not add tests.",
+        "3": "Reviews for intent, adds or checks tests, and rejects changes that drift from the task.",
+        "4": "Does all of 3 and improves the instructions or checks so the same defect does not recur."
+      }
+    }
+  ],
+  "stages": [
+    {
+      "id": "S1",
+      "name": "Work sample",
+      "kind": "work_sample",
+      "minutes": 90,
+      "min_scorers": 2,
+      "task": "You get a small service that classifies support tickets by calling a model, with 50 labelled, anonymised tickets and a log of last month's calls. In 90 minutes, and using any AI tools you like (say where), add an eval suite that can run in CI, report cost per ticket from the log, and change the design so the parts that do not need a model do not call one. Hand in the code and a half-page note.",
+      "criteria": [
+        {
+          "id": "W1",
+          "text": "Eval suite that runs in CI",
+          "competency": "C2",
+          "anchors": {
+            "1": "Relies on trying a few prompts by hand; no written cases.",
+            "2": "Writes happy-path cases only, or cases with no pass rule.",
+            "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+            "4": "Does all of 3, adds cases from real failure reports, and says how the suite stays honest as the model changes."
+          },
+          "ai_judgment": "evals"
+        },
+        {
+          "id": "W2",
+          "text": "Cost per ticket from the log",
+          "competency": "C3",
+          "anchors": {
+            "1": "Does not consider cost.",
+            "2": "Mentions cost but cannot estimate it per task.",
+            "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+            "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+          },
+          "ai_judgment": "cost"
+        },
+        {
+          "id": "W3",
+          "text": "Calls removed or replaced with code",
+          "competency": "C4",
+          "anchors": {
+            "1": "Uses a model for every step, including arithmetic and irreversible actions.",
+            "2": "Accepts a non-model option only when prompted.",
+            "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+            "4": "Does all of 3 and sets the rule for when the step could move to a model later, with the evidence that would justify it."
+          },
+          "ai_judgment": "restraint"
+        },
+        {
+          "id": "W4",
+          "text": "Failure handling",
+          "competency": "C1",
+          "anchors": {
+            "1": "None.",
+            "2": "Retries only.",
+            "3": "Timeout, fallback and a log line per call.",
+            "4": "Does all of 3 and a safe default when the model is unavailable."
+          }
+        },
+        {
+          "id": "W5",
+          "text": "Review of the agent-written parts",
+          "competency": "C5",
+          "anchors": {
+            "1": "Agent output accepted as is.",
+            "2": "Some review, no tests.",
+            "3": "Reviewed, tested and trimmed to the task.",
+            "4": "Does all of 3 and notes what the agent got wrong and how to prevent it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Structured interview: engineering judgment",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q1",
+          "text": "Tell me about an outage or bad release involving a model or an external API. What did you change afterwards?",
+          "competency": "C1",
+          "follow_ups": [
+            "What would have caught it earlier?"
+          ]
+        },
+        {
+          "id": "Q2",
+          "text": "How do you review a large change an agent wrote?",
+          "competency": "C5",
+          "follow_ups": [
+            "What do you reject most often?"
+          ]
+        },
+        {
+          "id": "Q3",
+          "text": "How would you make an action the model takes reversible?",
+          "competency": "C1",
+          "follow_ups": [
+            "When is that not possible?"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Structured interview: judgment in AI use",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q4",
+          "text": "Walk me through an eval suite you built. How did it run, and what did it block?",
+          "competency": "C2",
+          "follow_ups": [
+            "How did you keep it from going stale?"
+          ]
+        },
+        {
+          "id": "Q5",
+          "text": "Tokens per task doubled after a prompt change. How do you find out why?",
+          "competency": "C3",
+          "follow_ups": [
+            "What would you cap?"
+          ]
+        },
+        {
+          "id": "Q6",
+          "text": "Tell me about a time you replaced a model call with code.",
+          "competency": "C4",
+          "follow_ups": [
+            "How did you prove it was as good?"
+          ]
+        },
+        {
+          "id": "Q7",
+          "text": "How do you stop an agent repeating the same mistake across changes?",
+          "competency": "C5",
+          "follow_ups": [
+            "Give a recent example."
+          ]
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "bar": 3.0,
+    "panel_min": 3,
+    "spread_flag": 2,
+    "steps": [
+      "Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.",
+      "Interviewers do not see each other's scores or discuss the candidate until the debrief starts.",
+      "The facilitator runs `run.py score` and shares the packet. Nobody states a view first.",
+      "For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.",
+      "Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.",
+      "The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent."
+    ]
+  }
+}

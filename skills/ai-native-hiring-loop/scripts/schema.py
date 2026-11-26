@@ -21,6 +21,9 @@ ANCHOR_KEYS = ("1", "2", "3", "4")
 STAGE_KINDS = ("work_sample", "structured_interview")
 # The three kinds of judgment in AI use the loop must test. Every loop needs all three.
 AI_JUDGMENT_KINDS = ("evals", "cost", "restraint")
+# Where score timestamps came from. Only a system clock (an applicant tracking system or a
+# form tool) shows that a score was recorded before the debrief; a typed time is a claim.
+TIMESTAMP_SOURCES = ("ats", "form", "self-reported")
 
 
 class SchemaError(ValueError):
@@ -54,6 +57,9 @@ def _req(obj: dict[str, Any], key: str, kind: type | tuple[type, ...], where: st
         problems.append(f"{where}: missing '{key}'")
         return None
     value = obj[key]
+    if value is None:
+        problems.append(f"{where}.{key}: not filled in")
+        return None
     if not isinstance(value, kind) or (isinstance(value, bool) and kind is not bool):
         problems.append(f"{where}.{key}: wrong type")
         return None
@@ -133,6 +139,9 @@ def check_loop_shape(loop: dict[str, Any]) -> list[str]:
             stage_ids.add(sid)
         _req(s, "name", str, where, problems)
         _req(s, "minutes", int, where, problems)
+        ms = s.get("min_scorers", 1)
+        if not isinstance(ms, int) or isinstance(ms, bool) or ms < 1:
+            problems.append(f"{where}.min_scorers: must be a whole number of at least 1")
         kind = _req(s, "kind", str, where, problems)
         if kind is not None and kind not in STAGE_KINDS:
             problems.append(f"{where}.kind: must be one of {list(STAGE_KINDS)}")
@@ -187,6 +196,9 @@ def check_scores_shape(sheet: dict[str, Any]) -> list[str]:
     started = _req(sheet, "debrief_started_at", str, "sheet", problems)
     if started is not None and parse_time(started) is None:
         problems.append("sheet.debrief_started_at: must be ISO 8601 with a UTC offset")
+    tf = sheet.get("timestamps_from")
+    if tf is not None and tf not in TIMESTAMP_SOURCES:
+        problems.append(f"sheet.timestamps_from: must be one of {list(TIMESTAMP_SOURCES)}")
     asked = _req(sheet, "asked", dict, "sheet", problems)
     if asked is not None:
         for sid, ids in asked.items():
@@ -223,6 +235,11 @@ def item_index(loop: dict[str, Any]) -> dict[str, dict[str, Any]]:
                 "ai_judgment": it.get("ai_judgment"),
             }
     return index
+
+
+def min_scorers(loop: dict[str, Any]) -> dict[str, int]:
+    """Map each stage id to the number of independent scorers each of its items needs."""
+    return {s["id"]: s.get("min_scorers", 1) for s in loop.get("stages", [])}
 
 
 def stage_items(loop: dict[str, Any]) -> dict[str, list[str]]:

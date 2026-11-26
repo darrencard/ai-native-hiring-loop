@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """Command line for the AI-native hiring loop.
 
+  python3 scripts/run.py demo --out DIR
+  python3 scripts/run.py new --role pm|designer|engineer --out LOOP.json
   python3 scripts/run.py check-design LOOP.json [--kit OUT.md]
+  python3 scripts/run.py blank LOOP.json --candidate ID --out SHEET.json
+  python3 scripts/run.py import-csv LOOP.json EXPORT.csv --debrief ID=TIME [...] --timestamps-from ats|form|self-reported --out DIR
   python3 scripts/run.py score LOOP.json SHEET.json [SHEET.json ...] --out DIR
   python3 scripts/run.py check-note DIR/results.json NOTE.md
 
+demo runs the bundled, illustrative Acme example end to end (about a second).
+new copies a starter loop for a role family; edit it, then run check-design.
+blank writes an empty score sheet for one candidate, with every item listed.
+import-csv turns a form or tracker export (one row per score) into one sheet per candidate.
 check-design validates the loop and, if it passes, writes the interview kit.
 score runs every guardrail, combines the scores and writes results.json, ledger.csv
 and packet.md to DIR. Any guardrail error stops it before anything is written.
@@ -18,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -25,8 +34,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from aggregate import interviewer_drift, score_candidate  # noqa: E402
 from guardrails import check_design, check_pool, check_sheet, errors  # noqa: E402
+from importer import read_rows, to_sheets
 from packet import check_note, ledger_csv, render_kit, render_packet  # noqa: E402
-from schema import SchemaError, check_loop_shape, check_scores_shape, load_json  # noqa: E402
+from schema import SchemaError, check_loop_shape, check_scores_shape, load_json, stage_items  # noqa: E402
+
+ASSETS = Path(__file__).resolve().parent.parent / "assets"
+EXAMPLE = ASSETS / "example" / "acme"
+ROLES = ("pm", "designer", "engineer")
 
 
 def _print(findings: list[dict[str, str]]) -> None:
@@ -116,9 +130,96 @@ def cmd_check_note(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_demo(args: argparse.Namespace) -> int:
+    d = Path(args.out)
+    d.mkdir(parents=True, exist_ok=True)
+    loop_path = str(EXAMPLE / "loop.json")
+    code = cmd_check_design(argparse.Namespace(loop=loop_path, kit=str(d / "kit.md")))
+    if code:
+        return code
+    sheets = sorted(str(p) for p in (EXAMPLE / "scores").glob("*.json"))
+    return cmd_score(argparse.Namespace(loop=loop_path, sheets=sheets, out=str(d)))
+
+
+def cmd_new(args: argparse.Namespace) -> int:
+    out = Path(args.out)
+    if out.exists() and not args.force:
+        print(f"ERROR {out} exists; pass --force to replace it", file=sys.stderr)
+        return 2
+    out.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(ASSETS / "starters" / f"{args.role}.json", out)
+    print(f"Wrote {out}. Replace the outcomes with your own, adjust weights and anchors, then run check-design.")
+    return 0
+
+
+def cmd_blank(args: argparse.Namespace) -> int:
+    loop = _load_loop(args.loop)
+    rows = []
+    for s in loop["stages"]:
+        items = s.get("criteria") if s["kind"] == "work_sample" else s.get("questions")
+        for _ in range(s.get("min_scorers", 1)):
+            rows += [{"interviewer": "", "stage": s["id"], "item": it["id"], "score": None, "submitted_at": "", "evidence": ""} for it in items]
+    sheet = {
+        "candidate": args.candidate,
+        "loop_version": loop.get("version"),
+        "timestamps_from": "self-reported",
+        "debrief_started_at": "",
+        "asked": stage_items(loop),
+        "scores": rows,
+    }
+    out = Path(args.out)
+    if out.exists() and not args.force:
+        print(f"ERROR {out} exists; pass --force to replace it", file=sys.stderr)
+        return 2
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(sheet, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote {out} with {len(rows)} rows to fill. Fill every row and debrief_started_at; a blank row blocks scoring.")
+    print("Set timestamps_from to ats or form if the times come from a system clock.")
+    return 0
+
+
+def cmd_import_csv(args: argparse.Namespace) -> int:
+    loop = _load_loop(args.loop)
+    debriefs = {}
+    for pair in args.debrief:
+        cand, sep, when = pair.partition("=")
+        if not sep:
+            raise SchemaError(f"--debrief {pair!r}: use CANDIDATE=TIME")
+        debriefs[cand.strip()] = when.strip()
+    sheets = to_sheets(loop, read_rows(args.csv), debriefs, args.timestamps_from)
+    d = Path(args.out)
+    d.mkdir(parents=True, exist_ok=True)
+    for sheet in sheets:
+        path = d / f"{sheet['candidate']}.json"
+        path.write_text(json.dumps(sheet, indent=2) + "\n", encoding="utf-8")
+        print(f"Wrote {path} ({len(sheet['scores'])} scores)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    m = sub.add_parser("demo", help="run the illustrative Acme example end to end")
+    m.add_argument("--out", required=True)
+    m.set_defaults(fn=cmd_demo)
+    n = sub.add_parser("new", help="start a loop from a role starter")
+    n.add_argument("--role", choices=ROLES, required=True)
+    n.add_argument("--out", required=True)
+    n.add_argument("--force", action="store_true")
+    n.set_defaults(fn=cmd_new)
+    k = sub.add_parser("blank", help="write an empty score sheet for one candidate")
+    k.add_argument("loop")
+    k.add_argument("--candidate", required=True)
+    k.add_argument("--out", required=True)
+    k.add_argument("--force", action="store_true")
+    k.set_defaults(fn=cmd_blank)
+    i = sub.add_parser("import-csv", help="turn a form or tracker export into score sheets")
+    i.add_argument("loop")
+    i.add_argument("csv")
+    i.add_argument("--debrief", action="append", default=[], help="CANDIDATE=ISO time the debrief started; repeat per candidate")
+    i.add_argument("--timestamps-from", required=True, choices=("ats", "form", "self-reported"))
+    i.add_argument("--out", required=True)
+    i.set_defaults(fn=cmd_import_csv)
     a = sub.add_parser("check-design", help="validate a loop design and write the interview kit")
     a.add_argument("loop")
     a.add_argument("--kit", help="write the interview kit (Markdown) here")

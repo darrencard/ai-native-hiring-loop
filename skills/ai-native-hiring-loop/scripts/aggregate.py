@@ -148,6 +148,7 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
         "ai_judgment": ai,
         "eligible": len(eligible),
         "excluded": excluded,
+        "timestamps_from": sheet.get("timestamps_from"),
         "flags": flags,
         "ledger": ledger,
     }

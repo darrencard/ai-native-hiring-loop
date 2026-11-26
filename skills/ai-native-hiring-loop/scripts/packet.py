@@ -57,6 +57,8 @@ def render_kit(loop: dict[str, Any]) -> str:
     lines = [f"# Hiring loop: {role['title']}, {role['level']}", ""]
     if loop.get("illustrative"):
         lines += ["*Illustrative. Every name, figure and score in this kit is invented.*", ""]
+    if loop.get("starter"):
+        lines += ["*Starter loop. Replace the outcomes with your own and adjust weights and anchors before using it.*", ""]
     lines += [f"Team: {role['team']}. Loop version {loop.get('version', 'unversioned')}.", ""]
     lines += ["## Outcomes for the first year", "", "| ID | Outcome | Measure | By month |", "|---|---|---|---|"]
     lines += [f"| {o['id']} | {cell(o['text'])} | {cell(o['measure'])} | {o['by_month']} |" for o in loop["outcomes"]]
@@ -106,12 +108,14 @@ def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings:
     lines += [
         "Every figure below was computed by `aggregate.py` and has a row in `ledger.csv`. Scores recorded after the debrief started are not counted.",
         "",
-        "| Candidate | Overall | Band | Evals | Cost | Restraint | Counted | Not counted |",
-        "|---|---|---|---|---|---|---|---|",
+        "The overall score summarises; it does not decide. Read the competency rows and the evidence first. A named hiring manager decides.",
+        "",
+        "| Candidate | Overall | Band | Evals | Cost | Restraint | Counted | Not counted | Score times from |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in results:
         ai = {k: v or "none" for k, v in r["ai_judgment"].items()}
-        cols = [r["candidate"], r["overall"] or "none", r["band"], ai["evals"], ai["cost"], ai["restraint"], r["eligible"], r["excluded"]]
+        cols = [r["candidate"], r["overall"] or "none", r["band"], ai["evals"], ai["cost"], ai["restraint"], r["eligible"], r["excluded"], r.get("timestamps_from") or "not stated"]
         lines.append("| " + " | ".join(str(c) for c in cols) + " |")
     lines.append("")
     for r in results:

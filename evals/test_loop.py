@@ -31,11 +31,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skills" / "ai-native-hiring-loop" / "scripts"
-FIX = ROOT / "evals" / "fixtures" / "acme"
+FIX = SCRIPTS.parent / "assets" / "example" / "acme"
 sys.path.insert(0, str(SCRIPTS))
 
 import aggregate  # noqa: E402
 import guardrails  # noqa: E402
+import importer  # noqa: E402
 import packet  # noqa: E402
 import run  # noqa: E402
 import schema  # noqa: E402
@@ -416,7 +417,117 @@ class Note(unittest.TestCase):
         self.assertEqual(self.check("See C2 and Q10 for K-03, and S1 for W3."), set())
 
 
+class Starters(unittest.TestCase):
+    def test_every_starter_passes_design_with_no_warnings(self):
+        for role in run.ROLES:
+            lp = schema.load_json(SCRIPTS.parent / "assets" / "starters" / f"{role}.json")
+            self.assertEqual(schema.check_loop_shape(lp), [], role)
+            self.assertEqual(guardrails.check_design(lp), [], role)
+            self.assertTrue(lp["starter"], role)
+
+    def test_starters_are_marked_in_the_kit(self):
+        lp = schema.load_json(SCRIPTS.parent / "assets" / "starters" / "engineer.json")
+        self.assertIn("Starter loop", packet.render_kit(lp))
+
+
+class Scorers(unittest.TestCase):
+    def test_work_sample_needs_two_scorers_in_the_design(self):
+        lp = loop()
+        lp["stages"][0]["min_scorers"] = 1
+        self.assertIn("work-sample-scorers", rules(guardrails.check_design(lp)))
+
+    def test_item_with_too_few_scorers_blocks(self):
+        s = sheet("K-01")
+        s["scores"] = [r for r in s["scores"] if not (r["interviewer"] == "I-B" and r["item"] == "W1")]
+        f = guardrails.check_sheet(loop(), s)
+        self.assertTrue(any(x["rule"] == "under-scored" and "W1" in x["where"] for x in f))
+
+    def test_typed_times_warn_and_clock_times_do_not(self):
+        lp = loop()
+        self.assertNotIn("timestamp-provenance", rules(guardrails.check_sheet(lp, sheet("K-01")), "warning"))
+        for value in ("self-reported", None):
+            s = sheet("K-01")
+            s["timestamps_from"] = value
+            if value is None:
+                del s["timestamps_from"]
+            self.assertIn("timestamp-provenance", rules(guardrails.check_sheet(lp, s), "warning"))
+
+    def test_unknown_timestamp_source_is_refused(self):
+        s = sheet("K-01")
+        s["timestamps_from"] = "memory"
+        self.assertTrue(any("timestamps_from" in p for p in schema.check_scores_shape(s)))
+
+
+class ImportCsv(unittest.TestCase):
+    DEBRIEFS = {c: "2026-11-20T17:00:00+00:00" for c in CANDIDATES}
+
+    def test_csv_gives_the_same_sheets_and_figures_as_json(self):
+        rows = importer.read_rows(FIX / "form-export.csv")
+        sheets = importer.to_sheets(loop(), rows, self.DEBRIEFS, "form")
+        for s in sheets:
+            expected = sheet(s["candidate"])
+            expected.pop("illustrative")
+            self.assertEqual(s, expected, s["candidate"])
+
+    def test_skipped_question_in_an_export_is_blocked_not_filled(self):
+        rows = [r for r in importer.read_rows(FIX / "form-export.csv") if not (r["candidate"] == "K-02" and r["item"] == "Q7")]
+        sheets = importer.to_sheets(loop(), rows, self.DEBRIEFS, "form")
+        k02 = next(s for s in sheets if s["candidate"] == "K-02")
+        self.assertIn("same-questions", rules(guardrails.check_sheet(loop(), k02)))
+
+    def test_missing_debrief_time_is_refused(self):
+        rows = importer.read_rows(FIX / "form-export.csv")
+        with self.assertRaises(schema.SchemaError):
+            importer.to_sheets(loop(), rows, {"K-01": "2026-11-20T17:00:00+00:00"}, "form")
+
+    def test_bad_score_and_missing_column_are_refused(self):
+        rows = importer.read_rows(FIX / "form-export.csv")
+        rows[0]["score"] = "three"
+        with self.assertRaises(schema.SchemaError):
+            importer.to_sheets(loop(), rows, self.DEBRIEFS, "form")
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "x.csv"
+            p.write_text("candidate,score\nK-01,3\n", encoding="utf-8")
+            with self.assertRaises(schema.SchemaError):
+                importer.read_rows(p)
+
+    def test_cli_import_then_score(self):
+        with tempfile.TemporaryDirectory() as d:
+            args = ["import-csv", str(FIX / "loop.json"), str(FIX / "form-export.csv"), "--timestamps-from", "ats", "--out", d]
+            for c in CANDIDATES:
+                args += ["--debrief", f"{c}=2026-11-20T17:00:00+00:00"]
+            self.assertEqual(quiet(run.main, args)[0], 0)
+            code, out = quiet(run.main, ["score", str(FIX / "loop.json"), *sorted(str(p) for p in Path(d).glob("K-*.json")), "--out", d])
+            self.assertEqual(code, 0, out)
+            self.assertIn("K-02: overall 3.23, below bar", out)
+
+
 class Cli(unittest.TestCase):
+    def test_demo_runs_in_one_command(self):
+        with tempfile.TemporaryDirectory() as d:
+            code, out = quiet(run.main, ["demo", "--out", d])
+            self.assertEqual(code, 0, out)
+            text = (Path(d) / "packet.md").read_text(encoding="utf-8")
+            self.assertIn("does not decide", text)
+            self.assertIn("Score times from", text)
+            self.assertTrue((Path(d) / "kit.md").exists())
+
+    def test_new_then_blank_then_score_blocks_until_filled(self):
+        with tempfile.TemporaryDirectory() as d:
+            lp = Path(d) / "loop.json"
+            self.assertEqual(quiet(run.main, ["new", "--role", "designer", "--out", str(lp)])[0], 0)
+            self.assertEqual(quiet(run.main, ["new", "--role", "designer", "--out", str(lp)])[0], 2)
+            sh = Path(d) / "K-09.json"
+            self.assertEqual(quiet(run.main, ["blank", str(lp), "--candidate", "K-09", "--out", str(sh)])[0], 0)
+            blank = json.loads(sh.read_text(encoding="utf-8"))
+            design = json.loads(lp.read_text(encoding="utf-8"))
+            expected = sum(len(s.get("criteria") or s.get("questions")) * s.get("min_scorers", 1) for s in design["stages"])
+            self.assertEqual(len(blank["scores"]), expected)
+            self.assertEqual(blank["asked"], schema.stage_items(design))
+            code, out = quiet(run.main, ["score", str(lp), str(sh), "--out", str(Path(d) / "o")])
+            self.assertEqual(code, 2)
+            self.assertIn("not filled in", out)
+
     def test_end_to_end(self):
         with tempfile.TemporaryDirectory() as d:
             kit = Path(d) / "kit.md"

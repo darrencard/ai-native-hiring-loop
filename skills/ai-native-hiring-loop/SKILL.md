@@ -13,6 +13,15 @@ Designs one loop for one role, then combines its scores. Two files carry everyth
 
 Everything runs locally. The scripts make no network calls. Candidate data is personal data: do not send it anywhere, and do not keep it in the repository (`run/` is ignored).
 
+## Quick start: first kit in two commands
+
+```bash
+python3 scripts/run.py demo --out run/demo
+python3 scripts/run.py new --role pm --out run/loop.json
+```
+
+`demo` runs the illustrative Acme example (`assets/example/acme/`) end to end; show the user `run/demo/packet.md` so they see the output first. `new` copies a starter for `pm`, `designer` or `engineer` that already passes every design check. Then replace its outcomes with the user's own (step 1), adjust weights and anchors, and run `check-design`.
+
 ## The 4 rules that override everything else
 
 1. **Never do arithmetic yourself.** `scripts/run.py score` computes every mean, the overall score, the band and every flag, and writes a ledger row for each. If a number is not in `ledger.csv`, it does not go in a note or a message.
@@ -49,7 +58,7 @@ Every loop must test all three kinds of judgment in AI use, in a work sample, no
 | `cost` | States cost per task as tokens per task and price per token, against the value of the task |
 | `restraint` | Keeps a step out of the model (arithmetic, legal wording, irreversible sends) and says why |
 
-Read `references/loop-design.md` for the shape of a good work sample and question, and the anchors that separate a 3 from a 4. Copy `assets/loop-template.json` and fill it in. `evals/fixtures/acme/loop.json` in the repository is a full worked example (a senior PM for an AI assistant at an invented company).
+Read `references/loop-design.md` for the shape of a good work sample and question, and the anchors that separate a 3 from a 4. Start from a starter (`run.py new`), or from `assets/loop-template.json` for an unusual role; `check-design` blocks any template text left in angle brackets. `assets/example/acme/loop.json` is a full worked example (a senior PM for an AI assistant at an invented company).
 
 ### 2. Check the design and write the kit
 
@@ -57,11 +66,17 @@ Read `references/loop-design.md` for the shape of a good work sample and questio
 python3 scripts/run.py check-design run/loop.json --kit run/kit.md
 ```
 
-It blocks on: weights that do not add to 100, a missing work sample or structured interview, any of the three AI-judgment kinds untested in a work sample, a competency assessed in fewer than 2 stages, a competency linked to no outcome, and any banned criterion (such as "culture fit", "gut feel", "digital native", "energetic") anywhere in the loop. Fix and re-run until it passes. Then give the user `run/kit.md`: the one kit every interviewer uses for every candidate.
+It blocks on: weights that do not add to 100, a missing work sample or structured interview, a work sample with fewer than 2 scorers, any of the three AI-judgment kinds untested in a work sample, a competency assessed in fewer than 2 stages, a competency linked to no outcome, and any banned criterion (such as "culture fit", "gut feel", "digital native", "energetic") anywhere in the loop. Fix and re-run until it passes. Then give the user `run/kit.md`: the one kit every interviewer uses for every candidate.
 
 ### 3. Collect score sheets
 
-One JSON sheet per candidate, in the shape of `evals/fixtures/acme/scores/K-01.json`: the loop `version`, `debrief_started_at`, what each stage `asked`, and one row per interviewer per item with `score` (1 to 4), `submitted_at` (ISO 8601 with an offset) and `evidence` (at least 20 characters). Use candidate codes, not names, in the sheets.
+If interviewers score in a form or applicant tracking system, export one row per score as CSV (`candidate, interviewer, stage, item, score, submitted_at, evidence`; see `assets/example/acme/form-export.csv`) and run:
+
+```bash
+python3 scripts/run.py import-csv run/loop.json run/export.csv --debrief K-01=2026-11-20T17:00:00+00:00 --timestamps-from ats --out run/scores
+```
+
+What each stage asked is taken from the items scored, so a skipped question shows up as missing and blocks the packet. Otherwise, write one blank sheet per candidate with `python3 scripts/run.py blank run/loop.json --candidate K-01 --out run/scores/K-01.json`. It lists every item, once per required scorer. Interviewers fill: the loop `version`, `debrief_started_at`, what each stage `asked`, and one row per interviewer per item with `score` (1 to 4), `submitted_at` (ISO 8601 with an offset) and `evidence` (at least 20 characters). Use candidate codes, not names, in the sheets. Set `timestamps_from` to `ats` or `form` only when the times come from a system clock; typed times are `self-reported` and print a warning, because then "scores before discussion" is a claim, not a record. Work samples need at least 2 independent scorers per criterion (`min_scorers`).
 
 ### 4. Score and build the packet
 

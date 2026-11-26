@@ -1,6 +1,7 @@
 {
   "candidate": "K-02",
   "illustrative": true,
+  "timestamps_from": "form",
   "loop_version": "acme-spm-ai-2026-11",
   "debrief_started_at": "2026-11-20T17:00:00+00:00",
   "asked": {
@@ -58,7 +59,7 @@
       "item": "W4",
       "score": 4,
       "submitted_at": "2026-11-16T17:30:00+00:00",
-      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric (disputed quotes) and the line at which it would be rolled back."
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3, names the counter-metric (disputed quotes) and the line at which it would be rolled back, and says which of value, usability, feasibility and viability is the biggest risk and how to test it first."
     },
     {
       "interviewer": "I-B",

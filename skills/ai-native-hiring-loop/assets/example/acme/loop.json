@@ -32,7 +32,10 @@
       "name": "Outcome framing",
       "description": "Turns a request into a problem, a definition of good, non-goals and a line that says whether it landed.",
       "weight": 25,
-      "outcomes": ["O1", "O2"],
+      "outcomes": [
+        "O1",
+        "O2"
+      ],
       "anchors": {
         "1": "Describes features to build; no measure of whether they worked.",
         "2": "Names a metric but not a target, a window or what it would trade off.",
@@ -47,7 +50,9 @@
       "weight": 20,
       "floor": 2.5,
       "ai_judgment": "evals",
-      "outcomes": ["O2"],
+      "outcomes": [
+        "O2"
+      ],
       "anchors": {
         "1": "Relies on trying a few prompts by hand; no written cases.",
         "2": "Writes happy-path cases only, or cases with no pass rule.",
@@ -61,7 +66,9 @@
       "description": "Weighs tokens per task and price per token against the value of the task, and plans for growth.",
       "weight": 15,
       "ai_judgment": "cost",
-      "outcomes": ["O3"],
+      "outcomes": [
+        "O3"
+      ],
       "anchors": {
         "1": "Does not consider cost, or treats it as engineering's problem.",
         "2": "Mentions cost but cannot estimate it per task.",
@@ -76,7 +83,10 @@
       "weight": 20,
       "floor": 2.5,
       "ai_judgment": "restraint",
-      "outcomes": ["O2", "O3"],
+      "outcomes": [
+        "O2",
+        "O3"
+      ],
       "anchors": {
         "1": "Proposes a model for every step, including arithmetic and legal wording.",
         "2": "Accepts a non-model option only when prompted.",
@@ -89,7 +99,9 @@
       "name": "Customer and squad partnership",
       "description": "Learns from trades customers directly and brings design and engineering into decisions early.",
       "weight": 20,
-      "outcomes": ["O1"],
+      "outcomes": [
+        "O1"
+      ],
       "anchors": {
         "1": "Works from second-hand requests; hands specs over the wall.",
         "2": "Talks to customers occasionally; involves the squad after the decision.",
@@ -150,10 +162,11 @@
             "1": "A feature list.",
             "2": "A goal with no target or window.",
             "3": "A definition of good with a target and window, and non-goals.",
-            "4": "Does all of 3 and names the counter-metric (disputed quotes) and the line at which it would be rolled back."
+            "4": "Does all of 3, names the counter-metric (disputed quotes) and the line at which it would be rolled back, and says which of value, usability, feasibility and viability is the biggest risk and how to test it first."
           }
         }
-      ]
+      ],
+      "min_scorers": 2
     },
     {
       "id": "S2",
@@ -165,25 +178,34 @@
           "id": "Q1",
           "text": "Tell me about a launch you led that did not land. How did you know, and what did you change?",
           "competency": "C1",
-          "follow_ups": ["What was the measure, and when did you read it?", "What did you stop doing?"]
+          "follow_ups": [
+            "What was the measure, and when did you read it?",
+            "What did you stop doing?"
+          ]
         },
         {
           "id": "Q2",
           "text": "A sales leader asks for the assistant to chase every overdue invoice daily. How do you decide what good looks like?",
           "competency": "C1",
-          "follow_ups": ["What would you not build?"]
+          "follow_ups": [
+            "What would you not build?"
+          ]
         },
         {
           "id": "Q3",
           "text": "Describe the last time a customer conversation changed what you shipped.",
           "competency": "C5",
-          "follow_ups": ["How often do you talk to customers now?"]
+          "follow_ups": [
+            "How often do you talk to customers now?"
+          ]
         },
         {
           "id": "Q4",
           "text": "Tell me about a decision where an engineer or designer disagreed with you. What happened?",
           "competency": "C5",
-          "follow_ups": ["Would you decide the same way again?"]
+          "follow_ups": [
+            "Would you decide the same way again?"
+          ]
         }
       ]
     },
@@ -197,25 +219,33 @@
           "id": "Q5",
           "text": "Walk me through an eval suite you wrote or owned. What failure did it catch that a demo would have missed?",
           "competency": "C2",
-          "follow_ups": ["How did you set the pass line?"]
+          "follow_ups": [
+            "How did you set the pass line?"
+          ]
         },
         {
           "id": "Q6",
           "text": "The assistant's monthly model bill doubles while usage grows by half. What do you look at first?",
           "competency": "C3",
-          "follow_ups": ["What would you trade to bring it down?"]
+          "follow_ups": [
+            "What would you trade to bring it down?"
+          ]
         },
         {
           "id": "Q7",
           "text": "Tell me about a time you decided not to use a model for something a model could do.",
           "competency": "C4",
-          "follow_ups": ["What would have had to be true to use one?"]
+          "follow_ups": [
+            "What would have had to be true to use one?"
+          ]
         },
         {
           "id": "Q8",
           "text": "Invoice chasing emails go to a trade's own customers. Which parts would you let a model write, and which not?",
           "competency": "C4",
-          "follow_ups": ["Who signs off the wording?"]
+          "follow_ups": [
+            "Who signs off the wording?"
+          ]
         }
       ]
     },
@@ -229,13 +259,17 @@
           "id": "Q9",
           "text": "How do you bring design and engineering into a problem before there is a spec?",
           "competency": "C5",
-          "follow_ups": ["Give a recent example."]
+          "follow_ups": [
+            "Give a recent example."
+          ]
         },
         {
           "id": "Q10",
           "text": "How do you report to leadership whether something you shipped worked?",
           "competency": "C1",
-          "follow_ups": ["What do you do when the answer is that it did not?"]
+          "follow_ups": [
+            "What do you do when the answer is that it did not?"
+          ]
         }
       ]
     }

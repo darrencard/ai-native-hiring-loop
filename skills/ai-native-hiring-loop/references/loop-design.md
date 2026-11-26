@@ -16,7 +16,7 @@ A work sample is the only place the three kinds of AI judgment count toward cove
 - Allow AI tools and ask the candidate to say where they used them. Score the judgment, not whether they used a tool.
 - Include at least one step a model should not do (arithmetic, tax, legal or payment wording, an irreversible send).
 - Ask for eval cases with a pass rule, and a cost per task stated as tokens per task and price per token.
-- Two interviewers score it independently against the criteria anchors.
+- Two interviewers score it independently against the criteria anchors. Set `min_scorers: 2` (the design check requires it).
 
 ## Structured interview questions
 

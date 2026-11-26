@@ -144,7 +144,8 @@
             "4": "<a 4: all of 3 and more>"
           }
         }
-      ]
+      ],
+      "min_scorers": 2
     },
     {
       "id": "S2",

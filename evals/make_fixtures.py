@@ -9,10 +9,12 @@ Each evidence note quotes the rubric anchor the score matched, so the sheets sta
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent / "fixtures" / "acme"
+HERE = Path(__file__).resolve().parent.parent / "skills" / "ai-native-hiring-loop" / "assets" / "example" / "acme"
 LOOP = json.loads((HERE / "loop.json").read_text(encoding="utf-8"))
 
 # Who scores which stage. The work sample has two independent scorers.
@@ -82,11 +84,23 @@ def sheet(candidate: str) -> dict:
     return {
         "candidate": candidate,
         "illustrative": True,
+        "timestamps_from": "form",
         "loop_version": LOOP["version"],
         "debrief_started_at": DEBRIEF,
         "asked": asked,
         "scores": scores,
     }
+
+
+def export_csv() -> str:
+    """The same scores as a form export: one row per score, as import-csv reads them."""
+    cols = ("candidate", "interviewer", "stage", "item", "score", "submitted_at", "evidence")
+    rows = [{"candidate": c, **{k: r[k] for k in cols[1:]}} for c in TABLES for r in sheet(c)["scores"]]
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=cols, lineterminator="\n")
+    w.writeheader()
+    w.writerows(rows)
+    return buf.getvalue()
 
 
 def main() -> None:
@@ -95,6 +109,8 @@ def main() -> None:
     for cand in TABLES:
         (out / f"{cand}.json").write_text(json.dumps(sheet(cand), indent=2) + "\n", encoding="utf-8")
         print(f"wrote {out / (cand + '.json')}")
+    (HERE / "form-export.csv").write_text(export_csv(), encoding="utf-8")
+    print(f"wrote {HERE / 'form-export.csv'}")
 
 
 if __name__ == "__main__":

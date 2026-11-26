@@ -13,11 +13,12 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from schema import AI_JUDGMENT_KINDS, item_index, parse_time, stage_items
+from schema import AI_JUDGMENT_KINDS, item_index, min_scorers, parse_time, stage_items
 
 WEIGHT_TOTAL = 100
 MIN_EVIDENCE_CHARS = 20
 MIN_STAGES_PER_COMPETENCY = 2
+MIN_WORK_SAMPLE_SCORERS = 2
 
 # Criteria that invite bias or measure something other than the job. They may not
 # appear in a scorecard, a rubric, a task or a question.
@@ -131,6 +132,15 @@ def check_design(loop: dict[str, Any]) -> list[dict[str, str]]:
             out.append(finding("needs-questions", "error", f"stage {s['id']}", "a structured interview needs written questions"))
         if s.get("kind") == "work_sample" and not s.get("criteria"):
             out.append(finding("needs-rubric", "error", f"stage {s['id']}", "a work sample needs rubric criteria"))
+        if s.get("kind") == "work_sample" and s.get("min_scorers", 1) < MIN_WORK_SAMPLE_SCORERS:
+            out.append(
+                finding(
+                    "work-sample-scorers",
+                    "error",
+                    f"stage {s['id']}",
+                    f"set min_scorers to at least {MIN_WORK_SAMPLE_SCORERS}; a work sample is scored by two people who do not confer",
+                )
+            )
     return out
 
 
@@ -232,6 +242,27 @@ def check_sheet(loop: dict[str, Any], sheet: dict[str, Any]) -> list[dict[str, s
         for i in ids:
             if i in asked.get(sid, []) and i not in scored_items:
                 out.append(finding("unscored-item", "error", f"{cand} item {i}", "asked but has no eligible score"))
+
+    need = min_scorers(loop)
+    scorers: dict[str, set[str]] = {}
+    for _, r in eligible:
+        scorers.setdefault(r["item"], set()).add(r["interviewer"])
+    for sid, ids in required.items():
+        for i in ids:
+            n = len(scorers.get(i, set()))
+            if 0 < n < need.get(sid, 1):
+                out.append(finding("under-scored", "error", f"{cand} item {i}", f"{n} independent scorer(s); stage {sid} needs {need[sid]}"))
+
+    src = sheet.get("timestamps_from")
+    if src not in ("ats", "form"):
+        out.append(
+            finding(
+                "timestamp-provenance",
+                "warning",
+                cand,
+                "score times are typed, not taken from a system clock; export them from the applicant tracking system or form tool so 'scores before discussion' can be shown",
+            )
+        )
 
     panel = {r["interviewer"] for _, r in eligible}
     panel_min = (loop.get("calibration") or {}).get("panel_min", 2)

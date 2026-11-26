@@ -1,0 +1,55 @@
+candidate,interviewer,stage,item,score,submitted_at,evidence
+K-01,I-A,S1,W1,4,2026-11-16T16:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and builds cases from the job notes where the trade changed the draft, and says how often the suite is refreshed."
+K-01,I-A,S1,W2,3,2026-11-16T16:30:00+00:00,"Illustrative. Matched anchor 3: Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner."
+K-01,I-A,S1,W3,4,2026-11-16T17:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and recommends against auto-send for now, with the evidence that would change that."
+K-01,I-A,S1,W4,3,2026-11-16T17:30:00+00:00,"Illustrative. Matched anchor 3: A definition of good with a target and window, and non-goals."
+K-01,I-B,S1,W1,3,2026-11-16T16:00:00+00:00,"Illustrative. Matched anchor 3: Cases cover wrong parts prices, missing labour lines and wrong tax, each with a pass rule, and a pass line for release."
+K-01,I-B,S1,W2,3,2026-11-16T16:30:00+00:00,"Illustrative. Matched anchor 3: Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner."
+K-01,I-B,S1,W3,4,2026-11-16T17:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and recommends against auto-send for now, with the evidence that would change that."
+K-01,I-B,S1,W4,3,2026-11-16T17:30:00+00:00,"Illustrative. Matched anchor 3: A definition of good with a target and window, and non-goals."
+K-01,I-C,S2,Q1,3,2026-11-17T16:00:00+00:00,"Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+K-01,I-C,S2,Q2,4,2026-11-17T16:30:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric that would show the win is false, and who decides at the line."
+K-01,I-C,S2,Q3,3,2026-11-17T17:00:00+00:00,Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing.
+K-01,I-C,S2,Q4,3,2026-11-17T17:30:00+00:00,Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing.
+K-01,I-D,S3,Q5,4,2026-11-17T16:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3, adds cases from real failure reports, and says how the suite would be kept honest as the model changes."
+K-01,I-D,S3,Q6,3,2026-11-17T16:30:00+00:00,"Illustrative. Matched anchor 3: Estimates cost per task as tokens per task and price per token, and compares it with the value of the task."
+K-01,I-D,S3,Q7,3,2026-11-17T17:00:00+00:00,"Illustrative. Matched anchor 3: Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability)."
+K-01,I-D,S3,Q8,4,2026-11-17T17:30:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and sets the rule for when the step should move to a model later, with the evidence that would justify it."
+K-01,I-E,S4,Q9,3,2026-11-18T16:00:00+00:00,Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing.
+K-01,I-E,S4,Q10,3,2026-11-18T16:30:00+00:00,"Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+K-02,I-A,S1,W1,4,2026-11-16T16:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and builds cases from the job notes where the trade changed the draft, and says how often the suite is refreshed."
+K-02,I-A,S1,W2,3,2026-11-16T16:30:00+00:00,"Illustrative. Matched anchor 3: Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner."
+K-02,I-A,S1,W3,2,2026-11-16T17:00:00+00:00,Illustrative. Matched anchor 2: Keeps arithmetic out of the model only.
+K-02,I-A,S1,W4,4,2026-11-16T17:30:00+00:00,"Illustrative. Matched anchor 4: Does all of 3, names the counter-metric (disputed quotes) and the line at which it would be rolled back, and says which of value, usability, feasibility and viability is the biggest risk and how to test it first."
+K-02,I-B,S1,W1,4,2026-11-16T16:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and builds cases from the job notes where the trade changed the draft, and says how often the suite is refreshed."
+K-02,I-B,S1,W2,3,2026-11-16T16:30:00+00:00,"Illustrative. Matched anchor 3: Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner."
+K-02,I-B,S1,W3,1,2026-11-16T17:00:00+00:00,"Illustrative. Matched anchor 1: The model computes totals, tax and terms."
+K-02,I-B,S1,W4,3,2026-11-16T17:30:00+00:00,"Illustrative. Matched anchor 3: A definition of good with a target and window, and non-goals."
+K-02,I-C,S2,Q1,4,2026-11-17T16:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric that would show the win is false, and who decides at the line."
+K-02,I-C,S2,Q2,3,2026-11-17T16:30:00+00:00,"Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+K-02,I-C,S2,Q3,4,2026-11-17T17:00:00+00:00,Illustrative. Matched anchor 4: Does all of 3 and can show a decision the customer contact or the squad changed.
+K-02,I-C,S2,Q4,3,2026-11-17T17:30:00+00:00,Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing.
+K-02,I-D,S3,Q5,4,2026-11-17T16:00:00+00:00,"Illustrative. Matched anchor 4: Does all of 3, adds cases from real failure reports, and says how the suite would be kept honest as the model changes."
+K-02,I-D,S3,Q6,3,2026-11-17T16:30:00+00:00,"Illustrative. Matched anchor 3: Estimates cost per task as tokens per task and price per token, and compares it with the value of the task."
+K-02,I-D,S3,Q7,2,2026-11-17T17:00:00+00:00,Illustrative. Matched anchor 2: Accepts a non-model option only when prompted.
+K-02,I-D,S3,Q8,2,2026-11-17T17:30:00+00:00,Illustrative. Matched anchor 2: Accepts a non-model option only when prompted.
+K-02,I-E,S4,Q9,4,2026-11-18T16:00:00+00:00,Illustrative. Matched anchor 4: Does all of 3 and can show a decision the customer contact or the squad changed.
+K-02,I-E,S4,Q10,4,2026-11-18T16:30:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric that would show the win is false, and who decides at the line."
+K-03,I-A,S1,W1,3,2026-11-16T16:00:00+00:00,"Illustrative. Matched anchor 3: Cases cover wrong parts prices, missing labour lines and wrong tax, each with a pass rule, and a pass line for release."
+K-03,I-A,S1,W2,4,2026-11-16T16:30:00+00:00,"Illustrative. Matched anchor 4: Does all of 3 and shows the cheaper path and the quality it would cost, with the eval cases that would show it."
+K-03,I-A,S1,W3,3,2026-11-16T17:00:00+00:00,"Illustrative. Matched anchor 3: Keeps arithmetic, tax and payment terms in code or templates, and says why for each."
+K-03,I-A,S1,W4,3,2026-11-16T17:30:00+00:00,"Illustrative. Matched anchor 3: A definition of good with a target and window, and non-goals."
+K-03,I-B,S1,W1,1,2026-11-16T16:00:00+00:00,"Illustrative. Matched anchor 1: No eval cases, or only a note to test it."
+K-03,I-B,S1,W2,2,2026-11-16T16:30:00+00:00,Illustrative. Matched anchor 2: A total monthly figure with no per-task basis.
+K-03,I-B,S1,W3,3,2026-11-16T17:00:00+00:00,"Illustrative. Matched anchor 3: Keeps arithmetic, tax and payment terms in code or templates, and says why for each."
+K-03,I-B,S1,W4,2,2026-11-16T17:30:00+00:00,Illustrative. Matched anchor 2: A goal with no target or window.
+K-03,I-C,S2,Q1,3,2026-11-17T16:00:00+00:00,"Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+K-03,I-C,S2,Q2,3,2026-11-17T16:30:00+00:00,"Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+K-03,I-C,S2,Q3,3,2026-11-17T17:00:00+00:00,Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing.
+K-03,I-C,S2,Q4,2,2026-11-17T17:30:00+00:00,Illustrative. Matched anchor 2: Talks to customers occasionally; involves the squad after the decision.
+K-03,I-D,S3,Q5,3,2026-11-17T16:00:00+00:00,"Illustrative. Matched anchor 3: Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release."
+K-03,I-D,S3,Q6,3,2026-11-17T16:30:00+00:00,"Illustrative. Matched anchor 3: Estimates cost per task as tokens per task and price per token, and compares it with the value of the task."
+K-03,I-D,S3,Q7,3,2026-11-17T17:00:00+00:00,"Illustrative. Matched anchor 3: Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability)."
+K-03,I-D,S3,Q8,3,2026-11-17T17:30:00+00:00,"Illustrative. Matched anchor 3: Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability)."
+K-03,I-E,S4,Q9,3,2026-11-18T16:00:00+00:00,Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing.
+K-03,I-E,S4,Q10,3,2026-11-18T16:30:00+00:00,"Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."

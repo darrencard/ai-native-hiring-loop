@@ -12,6 +12,8 @@ A score counts (is "eligible") only if all of these hold:
 - it has written evidence of at least 20 characters;
 - it is the first score that interviewer gave that item.
 
+Each item also needs at least its stage's `min_scorers` distinct interviewers with eligible scores (2 for every work sample), or the sheet is blocked.
+
 Any score that fails one of these is also a guardrail error, so a packet with such a score does not render. The rule is applied twice on purpose: the figures never include a late score, even in code paths that skip the guardrails.
 
 ## Figures
@@ -49,3 +51,7 @@ With two scorers on a stage, drift shows on both. The flag says whose anchors to
 ## Ledger
 
 Every figure has a row in `ledger.csv`: an ID (`K-01.C2.mean`), the figure, the printed value, the source rows (`K-01.json#scores[4]`) and the method. `check-note` allows a number in a note only if it equals a ledger value, a design value (weight, floor, bar, minutes) or a method threshold.
+
+## Timestamps
+
+"Scores before discussion" is checked against `submitted_at`. A sheet says where those times came from in `timestamps_from`: `ats` or `form` (a system clock) or `self-reported` (typed). Typed or missing provenance prints a warning in the packet, because a typed time can be wrong or back-dated.
