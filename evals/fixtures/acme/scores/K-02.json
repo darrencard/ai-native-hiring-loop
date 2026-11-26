@@ -1,0 +1,176 @@
+{
+  "candidate": "K-02",
+  "illustrative": true,
+  "loop_version": "acme-spm-ai-2026-11",
+  "debrief_started_at": "2026-11-20T17:00:00+00:00",
+  "asked": {
+    "S1": [
+      "W1",
+      "W2",
+      "W3",
+      "W4"
+    ],
+    "S2": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4"
+    ],
+    "S3": [
+      "Q5",
+      "Q6",
+      "Q7",
+      "Q8"
+    ],
+    "S4": [
+      "Q9",
+      "Q10"
+    ]
+  },
+  "scores": [
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W1",
+      "score": 4,
+      "submitted_at": "2026-11-16T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and builds cases from the job notes where the trade changed the draft, and says how often the suite is refreshed."
+    },
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W2",
+      "score": 3,
+      "submitted_at": "2026-11-16T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner."
+    },
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W3",
+      "score": 2,
+      "submitted_at": "2026-11-16T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 2: Keeps arithmetic out of the model only."
+    },
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W4",
+      "score": 4,
+      "submitted_at": "2026-11-16T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric (disputed quotes) and the line at which it would be rolled back."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W1",
+      "score": 4,
+      "submitted_at": "2026-11-16T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and builds cases from the job notes where the trade changed the draft, and says how often the suite is refreshed."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W2",
+      "score": 3,
+      "submitted_at": "2026-11-16T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W3",
+      "score": 1,
+      "submitted_at": "2026-11-16T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 1: The model computes totals, tax and terms."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W4",
+      "score": 3,
+      "submitted_at": "2026-11-16T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: A definition of good with a target and window, and non-goals."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q1",
+      "score": 4,
+      "submitted_at": "2026-11-17T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric that would show the win is false, and who decides at the line."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q2",
+      "score": 3,
+      "submitted_at": "2026-11-17T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q3",
+      "score": 4,
+      "submitted_at": "2026-11-17T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and can show a decision the customer contact or the squad changed."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q4",
+      "score": 3,
+      "submitted_at": "2026-11-17T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q5",
+      "score": 4,
+      "submitted_at": "2026-11-17T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3, adds cases from real failure reports, and says how the suite would be kept honest as the model changes."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q6",
+      "score": 3,
+      "submitted_at": "2026-11-17T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Estimates cost per task as tokens per task and price per token, and compares it with the value of the task."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q7",
+      "score": 2,
+      "submitted_at": "2026-11-17T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 2: Accepts a non-model option only when prompted."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q8",
+      "score": 2,
+      "submitted_at": "2026-11-17T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 2: Accepts a non-model option only when prompted."
+    },
+    {
+      "interviewer": "I-E",
+      "stage": "S4",
+      "item": "Q9",
+      "score": 4,
+      "submitted_at": "2026-11-18T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and can show a decision the customer contact or the squad changed."
+    },
+    {
+      "interviewer": "I-E",
+      "stage": "S4",
+      "item": "Q10",
+      "score": 4,
+      "submitted_at": "2026-11-18T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and names the counter-metric that would show the win is false, and who decides at the line."
+    }
+  ]
+}

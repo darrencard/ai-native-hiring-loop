@@ -1,0 +1,176 @@
+{
+  "candidate": "K-03",
+  "illustrative": true,
+  "loop_version": "acme-spm-ai-2026-11",
+  "debrief_started_at": "2026-11-20T17:00:00+00:00",
+  "asked": {
+    "S1": [
+      "W1",
+      "W2",
+      "W3",
+      "W4"
+    ],
+    "S2": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4"
+    ],
+    "S3": [
+      "Q5",
+      "Q6",
+      "Q7",
+      "Q8"
+    ],
+    "S4": [
+      "Q9",
+      "Q10"
+    ]
+  },
+  "scores": [
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W1",
+      "score": 3,
+      "submitted_at": "2026-11-16T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Cases cover wrong parts prices, missing labour lines and wrong tax, each with a pass rule, and a pass line for release."
+    },
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W2",
+      "score": 4,
+      "submitted_at": "2026-11-16T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 4: Does all of 3 and shows the cheaper path and the quality it would cost, with the eval cases that would show it."
+    },
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W3",
+      "score": 3,
+      "submitted_at": "2026-11-16T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Keeps arithmetic, tax and payment terms in code or templates, and says why for each."
+    },
+    {
+      "interviewer": "I-A",
+      "stage": "S1",
+      "item": "W4",
+      "score": 3,
+      "submitted_at": "2026-11-16T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: A definition of good with a target and window, and non-goals."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W1",
+      "score": 1,
+      "submitted_at": "2026-11-16T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 1: No eval cases, or only a note to test it."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W2",
+      "score": 2,
+      "submitted_at": "2026-11-16T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 2: A total monthly figure with no per-task basis."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W3",
+      "score": 3,
+      "submitted_at": "2026-11-16T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Keeps arithmetic, tax and payment terms in code or templates, and says why for each."
+    },
+    {
+      "interviewer": "I-B",
+      "stage": "S1",
+      "item": "W4",
+      "score": 2,
+      "submitted_at": "2026-11-16T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 2: A goal with no target or window."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q1",
+      "score": 3,
+      "submitted_at": "2026-11-17T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q2",
+      "score": 3,
+      "submitted_at": "2026-11-17T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q3",
+      "score": 3,
+      "submitted_at": "2026-11-17T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing."
+    },
+    {
+      "interviewer": "I-C",
+      "stage": "S2",
+      "item": "Q4",
+      "score": 2,
+      "submitted_at": "2026-11-17T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 2: Talks to customers occasionally; involves the squad after the decision."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q5",
+      "score": 3,
+      "submitted_at": "2026-11-17T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q6",
+      "score": 3,
+      "submitted_at": "2026-11-17T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Estimates cost per task as tokens per task and price per token, and compares it with the value of the task."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q7",
+      "score": 3,
+      "submitted_at": "2026-11-17T17:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability)."
+    },
+    {
+      "interviewer": "I-D",
+      "stage": "S3",
+      "item": "Q8",
+      "score": 3,
+      "submitted_at": "2026-11-17T17:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability)."
+    },
+    {
+      "interviewer": "I-E",
+      "stage": "S4",
+      "item": "Q9",
+      "score": 3,
+      "submitted_at": "2026-11-18T16:00:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: Has a regular habit of customer contact and involves design and engineering in framing."
+    },
+    {
+      "interviewer": "I-E",
+      "stage": "S4",
+      "item": "Q10",
+      "score": 3,
+      "submitted_at": "2026-11-18T16:30:00+00:00",
+      "evidence": "Illustrative. Matched anchor 3: States the problem, a definition of good with a target and window, and at least one non-goal."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "ai-native-hiring-loop",
+  "version": "0.1.0",
+  "description": "Design a hiring loop for an AI-fluent product, design or engineering role: a scorecard, work samples that test judgment in AI use, structured questions and a calibration packet. Scores are combined in code, every candidate gets the same questions, and scores recorded after the debrief starts do not count.",
+  "author": { "name": "Dacard" },
+  "license": "MIT"
+}

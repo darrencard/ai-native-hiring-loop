@@ -1,0 +1,197 @@
+{
+  "version": "<role>-<yyyy-mm>",
+  "illustrative": false,
+  "role": {
+    "title": "<role title>",
+    "level": "<level>",
+    "team": "<team and what the product does>"
+  },
+  "outcomes": [
+    {
+      "id": "O1",
+      "text": "<outcome for the first year>",
+      "measure": "<how it is measured>",
+      "by_month": 6
+    },
+    {
+      "id": "O2",
+      "text": "<outcome>",
+      "measure": "<measure>",
+      "by_month": 12
+    }
+  ],
+  "competencies": [
+    {
+      "id": "C1",
+      "name": "Outcome framing",
+      "description": "<one sentence>",
+      "weight": 30,
+      "outcomes": [
+        "O1",
+        "O2"
+      ],
+      "anchors": {
+        "1": "<what a 1 looks like, observable>",
+        "2": "<a 2>",
+        "3": "<a 3: the bar>",
+        "4": "<a 4: all of 3 and more>"
+      }
+    },
+    {
+      "id": "C2",
+      "name": "Eval design",
+      "description": "<one sentence>",
+      "weight": 25,
+      "outcomes": [
+        "O2"
+      ],
+      "anchors": {
+        "1": "<what a 1 looks like, observable>",
+        "2": "<a 2>",
+        "3": "<a 3: the bar>",
+        "4": "<a 4: all of 3 and more>"
+      },
+      "ai_judgment": "evals",
+      "floor": 2.5
+    },
+    {
+      "id": "C3",
+      "name": "Cost judgment",
+      "description": "<one sentence>",
+      "weight": 20,
+      "outcomes": [
+        "O2"
+      ],
+      "anchors": {
+        "1": "<what a 1 looks like, observable>",
+        "2": "<a 2>",
+        "3": "<a 3: the bar>",
+        "4": "<a 4: all of 3 and more>"
+      },
+      "ai_judgment": "cost"
+    },
+    {
+      "id": "C4",
+      "name": "Restraint: knowing when not to use a model",
+      "description": "<one sentence>",
+      "weight": 25,
+      "outcomes": [
+        "O1",
+        "O2"
+      ],
+      "anchors": {
+        "1": "<what a 1 looks like, observable>",
+        "2": "<a 2>",
+        "3": "<a 3: the bar>",
+        "4": "<a 4: all of 3 and more>"
+      },
+      "ai_judgment": "restraint",
+      "floor": 2.5
+    }
+  ],
+  "stages": [
+    {
+      "id": "S1",
+      "name": "Work sample: <decision the candidate makes>",
+      "kind": "work_sample",
+      "minutes": 90,
+      "task": "<the situation, the material provided, the time box, what to hand in, and that AI tools are allowed and should be declared>",
+      "criteria": [
+        {
+          "id": "W1",
+          "text": "Eval cases and pass line",
+          "competency": "C2",
+          "ai_judgment": "evals",
+          "anchors": {
+            "1": "<what a 1 looks like, observable>",
+            "2": "<a 2>",
+            "3": "<a 3: the bar>",
+            "4": "<a 4: all of 3 and more>"
+          }
+        },
+        {
+          "id": "W2",
+          "text": "Cost per task",
+          "competency": "C3",
+          "ai_judgment": "cost",
+          "anchors": {
+            "1": "<what a 1 looks like, observable>",
+            "2": "<a 2>",
+            "3": "<a 3: the bar>",
+            "4": "<a 4: all of 3 and more>"
+          }
+        },
+        {
+          "id": "W3",
+          "text": "Steps kept out of the model",
+          "competency": "C4",
+          "ai_judgment": "restraint",
+          "anchors": {
+            "1": "<what a 1 looks like, observable>",
+            "2": "<a 2>",
+            "3": "<a 3: the bar>",
+            "4": "<a 4: all of 3 and more>"
+          }
+        },
+        {
+          "id": "W4",
+          "text": "Recommendation framed as an outcome",
+          "competency": "C1",
+          "anchors": {
+            "1": "<what a 1 looks like, observable>",
+            "2": "<a 2>",
+            "3": "<a 3: the bar>",
+            "4": "<a 4: all of 3 and more>"
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Structured interview: <focus>",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q1",
+          "text": "<behavioural question: tell me about a time...>",
+          "competency": "C1",
+          "follow_ups": [
+            "<probe>"
+          ]
+        },
+        {
+          "id": "Q2",
+          "text": "<situational question about evals>",
+          "competency": "C2",
+          "follow_ups": []
+        },
+        {
+          "id": "Q3",
+          "text": "<situational question about cost>",
+          "competency": "C3",
+          "follow_ups": []
+        },
+        {
+          "id": "Q4",
+          "text": "<a time you chose not to use a model>",
+          "competency": "C4",
+          "follow_ups": []
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "bar": 3.0,
+    "panel_min": 3,
+    "spread_flag": 2,
+    "steps": [
+      "Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.",
+      "Interviewers do not see each other's scores or discuss the candidate until the debrief starts.",
+      "The facilitator runs `run.py score` and shares the packet. Nobody states a view first.",
+      "For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.",
+      "Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.",
+      "The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent."
+    ]
+  }
+}

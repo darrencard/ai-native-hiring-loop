@@ -1,0 +1,256 @@
+{
+  "version": "acme-spm-ai-2026-11",
+  "illustrative": true,
+  "role": {
+    "title": "Senior Product Manager, AI assistant",
+    "level": "Senior (L6)",
+    "team": "Acme Assist squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative."
+  },
+  "outcomes": [
+    {
+      "id": "O1",
+      "text": "More quotes go out from an assistant draft with light edits, without a rise in disputed quotes",
+      "measure": "share of sent quotes that started as an assistant draft and had under a fifth of their text changed, read beside the dispute rate",
+      "by_month": 9
+    },
+    {
+      "id": "O2",
+      "text": "Every assistant release is gated by an eval suite the squad owns",
+      "measure": "releases that ran the suite and met the agreed pass line before shipping, out of all assistant releases",
+      "by_month": 6
+    },
+    {
+      "id": "O3",
+      "text": "Cost per drafted quote stays inside the agreed budget as usage grows",
+      "measure": "model and tool spend per drafted quote against the budget line, monthly",
+      "by_month": 12
+    }
+  ],
+  "competencies": [
+    {
+      "id": "C1",
+      "name": "Outcome framing",
+      "description": "Turns a request into a problem, a definition of good, non-goals and a line that says whether it landed.",
+      "weight": 25,
+      "outcomes": ["O1", "O2"],
+      "anchors": {
+        "1": "Describes features to build; no measure of whether they worked.",
+        "2": "Names a metric but not a target, a window or what it would trade off.",
+        "3": "States the problem, a definition of good with a target and window, and at least one non-goal.",
+        "4": "Does all of 3 and names the counter-metric that would show the win is false, and who decides at the line."
+      }
+    },
+    {
+      "id": "C2",
+      "name": "Eval design",
+      "description": "Writes evals that would catch the failures that matter to a trades business before a customer does.",
+      "weight": 20,
+      "floor": 2.5,
+      "ai_judgment": "evals",
+      "outcomes": ["O2"],
+      "anchors": {
+        "1": "Relies on trying a few prompts by hand; no written cases.",
+        "2": "Writes happy-path cases only, or cases with no pass rule.",
+        "3": "Writes cases for the main failure modes, each with a pass rule, and sets a pass line for release.",
+        "4": "Does all of 3, adds cases from real failure reports, and says how the suite would be kept honest as the model changes."
+      }
+    },
+    {
+      "id": "C3",
+      "name": "Cost judgment",
+      "description": "Weighs tokens per task and price per token against the value of the task, and plans for growth.",
+      "weight": 15,
+      "ai_judgment": "cost",
+      "outcomes": ["O3"],
+      "anchors": {
+        "1": "Does not consider cost, or treats it as engineering's problem.",
+        "2": "Mentions cost but cannot estimate it per task.",
+        "3": "Estimates cost per task as tokens per task and price per token, and compares it with the value of the task.",
+        "4": "Does all of 3 and names the cheaper path (smaller model, caching, no model) and the quality it would trade."
+      }
+    },
+    {
+      "id": "C4",
+      "name": "Restraint: knowing when not to use a model",
+      "description": "Chooses rules, templates or a person over a model where those are cheaper, safer or more accurate.",
+      "weight": 20,
+      "floor": 2.5,
+      "ai_judgment": "restraint",
+      "outcomes": ["O2", "O3"],
+      "anchors": {
+        "1": "Proposes a model for every step, including arithmetic and legal wording.",
+        "2": "Accepts a non-model option only when prompted.",
+        "3": "Unprompted, keeps at least one step out of the model and says why (accuracy, cost or liability).",
+        "4": "Does all of 3 and sets the rule for when the step should move to a model later, with the evidence that would justify it."
+      }
+    },
+    {
+      "id": "C5",
+      "name": "Customer and squad partnership",
+      "description": "Learns from trades customers directly and brings design and engineering into decisions early.",
+      "weight": 20,
+      "outcomes": ["O1"],
+      "anchors": {
+        "1": "Works from second-hand requests; hands specs over the wall.",
+        "2": "Talks to customers occasionally; involves the squad after the decision.",
+        "3": "Has a regular habit of customer contact and involves design and engineering in framing.",
+        "4": "Does all of 3 and can show a decision the customer contact or the squad changed."
+      }
+    }
+  ],
+  "stages": [
+    {
+      "id": "S1",
+      "name": "Work sample: should drafted quotes auto-send?",
+      "kind": "work_sample",
+      "minutes": 90,
+      "task": "Acme Assist drafts quotes for plumbers and electricians from a job note and a parts list. A large customer asks for drafts to send without review. You get 40 anonymised, illustrative job notes with the drafts the assistant produced and the quotes the trade sent. In 90 minutes, write a one-page recommendation: what you would ship, the eval cases that would gate it, the cost per drafted quote, and which steps should not use a model. Using Claude or any other tool is allowed and expected; say where you used it.",
+      "criteria": [
+        {
+          "id": "W1",
+          "text": "Eval cases and pass line",
+          "competency": "C2",
+          "ai_judgment": "evals",
+          "anchors": {
+            "1": "No eval cases, or only a note to test it.",
+            "2": "Cases cover the happy path only, or have no pass rule.",
+            "3": "Cases cover wrong parts prices, missing labour lines and wrong tax, each with a pass rule, and a pass line for release.",
+            "4": "Does all of 3 and builds cases from the job notes where the trade changed the draft, and says how often the suite is refreshed."
+          }
+        },
+        {
+          "id": "W2",
+          "text": "Cost per drafted quote",
+          "competency": "C3",
+          "ai_judgment": "cost",
+          "anchors": {
+            "1": "No cost estimate.",
+            "2": "A total monthly figure with no per-task basis.",
+            "3": "Cost per drafted quote as tokens per task and price per token, compared with the value of a quote sent sooner.",
+            "4": "Does all of 3 and shows the cheaper path and the quality it would cost, with the eval cases that would show it."
+          }
+        },
+        {
+          "id": "W3",
+          "text": "Steps kept out of the model",
+          "competency": "C4",
+          "ai_judgment": "restraint",
+          "anchors": {
+            "1": "The model computes totals, tax and terms.",
+            "2": "Keeps arithmetic out of the model only.",
+            "3": "Keeps arithmetic, tax and payment terms in code or templates, and says why for each.",
+            "4": "Does all of 3 and recommends against auto-send for now, with the evidence that would change that."
+          }
+        },
+        {
+          "id": "W4",
+          "text": "Recommendation framed as an outcome",
+          "competency": "C1",
+          "anchors": {
+            "1": "A feature list.",
+            "2": "A goal with no target or window.",
+            "3": "A definition of good with a target and window, and non-goals.",
+            "4": "Does all of 3 and names the counter-metric (disputed quotes) and the line at which it would be rolled back."
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Structured interview: product judgment",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q1",
+          "text": "Tell me about a launch you led that did not land. How did you know, and what did you change?",
+          "competency": "C1",
+          "follow_ups": ["What was the measure, and when did you read it?", "What did you stop doing?"]
+        },
+        {
+          "id": "Q2",
+          "text": "A sales leader asks for the assistant to chase every overdue invoice daily. How do you decide what good looks like?",
+          "competency": "C1",
+          "follow_ups": ["What would you not build?"]
+        },
+        {
+          "id": "Q3",
+          "text": "Describe the last time a customer conversation changed what you shipped.",
+          "competency": "C5",
+          "follow_ups": ["How often do you talk to customers now?"]
+        },
+        {
+          "id": "Q4",
+          "text": "Tell me about a decision where an engineer or designer disagreed with you. What happened?",
+          "competency": "C5",
+          "follow_ups": ["Would you decide the same way again?"]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Structured interview: judgment in AI use",
+      "kind": "structured_interview",
+      "minutes": 45,
+      "questions": [
+        {
+          "id": "Q5",
+          "text": "Walk me through an eval suite you wrote or owned. What failure did it catch that a demo would have missed?",
+          "competency": "C2",
+          "follow_ups": ["How did you set the pass line?"]
+        },
+        {
+          "id": "Q6",
+          "text": "The assistant's monthly model bill doubles while usage grows by half. What do you look at first?",
+          "competency": "C3",
+          "follow_ups": ["What would you trade to bring it down?"]
+        },
+        {
+          "id": "Q7",
+          "text": "Tell me about a time you decided not to use a model for something a model could do.",
+          "competency": "C4",
+          "follow_ups": ["What would have had to be true to use one?"]
+        },
+        {
+          "id": "Q8",
+          "text": "Invoice chasing emails go to a trade's own customers. Which parts would you let a model write, and which not?",
+          "competency": "C4",
+          "follow_ups": ["Who signs off the wording?"]
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "Structured interview: working with the squad",
+      "kind": "structured_interview",
+      "minutes": 30,
+      "questions": [
+        {
+          "id": "Q9",
+          "text": "How do you bring design and engineering into a problem before there is a spec?",
+          "competency": "C5",
+          "follow_ups": ["Give a recent example."]
+        },
+        {
+          "id": "Q10",
+          "text": "How do you report to leadership whether something you shipped worked?",
+          "competency": "C1",
+          "follow_ups": ["What do you do when the answer is that it did not?"]
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "bar": 3.0,
+    "panel_min": 3,
+    "spread_flag": 2,
+    "steps": [
+      "Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.",
+      "Interviewers do not see each other's scores or discuss the candidate until the debrief starts.",
+      "The facilitator runs `run.py score` and shares the packet. Nobody states a view first.",
+      "For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.",
+      "Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.",
+      "The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent."
+    ]
+  }
+}
