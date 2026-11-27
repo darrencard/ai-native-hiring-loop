@@ -39,8 +39,8 @@ OVERCLAIMS = (
     "a sure thing",
 )
 BAND_PHRASES = {
-    "meets bar": re.compile(r"\bmeets (?:the )?bar\b|\babove (?:the )?bar\b|\bclears (?:the )?bar\b"),
-    "below bar": re.compile(r"\bbelow (?:the )?bar\b|\bunder (?:the )?bar\b|\bmisses (?:the )?bar\b"),
+    "meets bar": re.compile(r"\bmeets (?:the )?(?:bar|target)\b|\babove (?:the )?(?:bar|target)\b|\bclears (?:the )?(?:bar|target)\b"),
+    "below bar": re.compile(r"\bbelow (?:the )?(?:bar|target)\b|\bunder (?:the )?(?:bar|target)\b|\bmisses (?:the )?(?:bar|target)\b"),
     "insufficient evidence": re.compile(r"\binsufficient evidence\b|\bnot enough evidence\b"),
 }
 # A numbered-list marker ("5. Scores do not change") is a position, not a figure.
@@ -48,6 +48,42 @@ LIST_MARK = re.compile(r"^\s*\d+\.(?:\s+|$)")
 # Identifiers such as K-01, C2, Q10 or S3 carry digits but are not figures.
 IDENT = re.compile(r"\b[A-Za-z]+-?\d+(?:\.\d+)*\b")
 NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?!\w|\.\d)")  # a full stop after a figure ends the sentence, it does not hide the figure
+
+
+# The method's words as aggregate.py stores them, and as the packet prints them. results.json and ledger.csv keep
+# the stored words; the packet and its Markdown twin print plain ones.
+WORDS = (
+    (r"; the band is below bar whatever the overall score", "; that puts it below the target whatever the overall score"),
+    (r", so the band is below bar", ", so it is below the target"),
+    (r"\bmeets bar\b", "meets the target"),
+    (r"\bbelow bar\b", "below the target"),
+    (r"\binsufficient evidence\b", "not enough evidence"),
+    (r"\bthe bar of\b", "the target of"),
+    (r"\bthe bar\b", "the target"),
+    (r"\ba bar of\b", "a target of"),
+    (r"\bagainst the anchors\b", "against the scoring guide"),
+    (r"\bwith the anchors\b", "with the scoring guide"),
+    (r"\bmisread an anchor\b", "misread the scoring guide"),
+    (r"\bflagged competency\b", "flagged skill area"),
+    (r"\bno competency\b", "no skill area"),
+    (r"\bAt least one competency\b", "At least one skill area"),
+    (r"\bcompetency rows\b", "skill area rows"),
+    (r"\bthe rubric\b", "the scoring guide"),
+    (r"\bthe band\b", "the verdict"),
+)
+VERDICT = {"meets bar": "meets the target", "below bar": "below the target", "insufficient evidence": "not enough evidence"}
+
+
+def plain(text: str) -> str:
+    """The packet's words for a reader who has never run a hiring loop: target, skill area, scoring guide."""
+    for pattern, to in WORDS:
+        text = re.sub(pattern, to, text)
+    return text
+
+
+def short(name: str) -> str:
+    """A skill area's name as a picture prints it: the part before any colon."""
+    return name.split(":", 1)[0].strip()
 
 
 def cell(text: Any) -> str:
@@ -115,7 +151,7 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
     sources = sorted({r.get("timestamps_from") or "not stated" for r in results})
     n, items = g["candidates"]["value"], g["items"]["value"]
     who = f"{owner} ({decision['role']})" if decision.get("role") else owner
-    lede = f"{n} candidates, the same {items} items each, scored in code against the rubric before the debrief. Hire decision: {who}."
+    lede = f"{n} candidates, the same {items} questions and tasks each, scored in code against the scoring guide before the debrief. Hire decision: {who}."
     candidates = []
     for raw in results:
         # results hold numbers; the packet prints them to 2 decimals, the same in Markdown and HTML.
@@ -139,14 +175,17 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
             why = f"Overall {r['overall']} is under the bar of {r['bar']}."
         else:
             why = f"Overall {r['overall']} against a bar of {r['bar']}, with no competency under its floor."
-        candidates.append({**r, "why": why})
+        floors_by_id = {c["id"]: c.get("floor") for c in loop["competencies"]}
+        r["competencies"] = [{**c, "floor": show(floors_by_id.get(c["id"])), "short": short(c["name"])} for c in r["competencies"]]
+        r["flags"] = [{**f, "message": plain(f["message"])} for f in r["flags"]]
+        candidates.append({**r, "why": plain(why), "verdict": VERDICT.get(r["band"], r["band"]), "raw": raw})
     guardrails = [
-        ("Same questions", f"{g['same_questions']['value']} of {n} candidates got all {items} items, in order. A skipped or added question blocks the packet."),
+        ("Same questions", f"{g['same_questions']['value']} of {n} candidates got all {items} questions and tasks, in order. A skipped or added question blocks the packet."),
         (
             "Scores before discussion",
             f"{g['counted']['value']} scores counted; {g['after_debrief']['value']} recorded at or after the debrief started. Score times from: {', '.join(sources)}.",
         ),
-        ("Independent scoring", f"Every work-sample criterion has at least {g['work_sample_scorers']['value']} scorers who did not confer."),
+        ("Independent scoring", f"Every work-sample task is scored by at least {g['work_sample_scorers']['value']} interviewers who did not confer."),
         ("No protected attributes", "Sheets carry candidate codes only. A field for a name, age, photo or school, or evidence that mentions one, blocks the packet."),
         ("No banned criteria", "Criteria that judge the person, not the work (fit, a hunch, the right school), are blocked in the loop, in the evidence and in the decision note."),
     ]
@@ -164,13 +203,17 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
         "summary": summary,
         "owner": who,
         "by": decision.get("by", ""),
-        "decision": "Hire or not, for each candidate. The band says how the evidence compares with the bar this loop set. It does not decide, and it does not predict performance.",
+        "decision": (
+            "Decide hire or not for each candidate, reading the evidence first. The verdict says how the evidence compares with the target "
+            "this loop set. It does not decide, and it does not predict performance."
+        ),
         "bar": show(results[0]["bar"]) if results else fmt(Fraction(str(loop["calibration"]["bar"]))),
         "candidates": candidates,
         "pool_flags": pool_flags,
         "guardrails": guardrails,
         "warnings": warnings,
-        "steps": loop["calibration"]["steps"],
+        "steps": [plain(x) for x in loop["calibration"]["steps"]],
+        "ai_areas": {c["ai_judgment"]: short(c["name"]) for c in loop["competencies"] if c.get("ai_judgment")},
         "foot": "Code computed every figure from the score sheets named in the ledger; the model wrote none. A named hiring manager decides and owns the note.",
     }
 
@@ -182,7 +225,7 @@ def _top(candidates: list[dict[str, Any]], pool_flags: list[dict[str, str]], g: 
         by_band.setdefault(r["band"], []).append(r)
     meets = [r["candidate"] for r in by_band["meets bar"]]
     n = len(candidates)
-    answer = f"{len(meets)} of {n} candidates meets the bar of {bar}: {', '.join(meets)}." if meets else f"None of the {n} candidates meets the bar of {bar}."
+    answer = f"{len(meets)} of {n} candidates meets the target of {bar}: {', '.join(meets)}." if meets else f"None of the {n} candidates meets the target of {bar}."
 
     def listed(rs: list[dict[str, Any]]) -> str:
         if not rs:
@@ -190,7 +233,7 @@ def _top(candidates: list[dict[str, Any]], pool_flags: list[dict[str, str]], g: 
         parts = []
         for r in rs:
             floors = [f["message"].split(",")[0] for f in r["flags"] if f["rule"] == "floor"]
-            extra = f"; under its floor on {' and '.join(x.split(' is ')[0] for x in floors)}" if floors else ""
+            extra = f"; under its floor on {' and '.join(short(x.split(' is ')[0]) for x in floors)}" if floors else ""
             parts.append(f"{r['candidate']} (overall {r['overall'] or 'none'}{extra})")
         return "; ".join(parts)
 
@@ -198,18 +241,18 @@ def _top(candidates: list[dict[str, Any]], pool_flags: list[dict[str, str]], g: 
     drift = [f["message"].split(";")[0] for f in pool_flags]
     first = spreads + drift
     summary = [
-        f"Meets bar: {listed(by_band['meets bar'])}.",
-        f"Below bar: {listed(by_band['below bar'])}.",
-        f"Insufficient evidence: {listed(by_band['insufficient evidence'])}.",
+        f"Meets the target: {listed(by_band['meets bar'])}.",
+        f"Below the target: {listed(by_band['below bar'])}.",
+        f"Not enough evidence: {listed(by_band['insufficient evidence'])}.",
         f"To discuss first: {'; '.join(first) if first else 'nothing flagged'}.",
-        f"Fairness: {g['same_questions']['value']} of {n} candidates got the same {g['items']['value']} items; "
+        f"Fairness: {g['same_questions']['value']} of {n} candidates got the same {g['items']['value']} questions and tasks; "
         f"{g['after_debrief']['value']} scores recorded at or after the debrief started.",
     ]
     return answer, summary
 
 
 def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dict[str, str]], pool_flags: list[dict[str, str]], guards: list[dict[str, Any]]) -> str:
-    """The plain-text twin of the HTML page."""
+    """The plain-text twin of the HTML page, in the same plain words: target, skill area, scoring guide."""
     v = view(loop, results, findings, pool_flags, guards)
     lines = [f"# {v['title']}", ""]
     if v["illustrative"]:
@@ -217,31 +260,28 @@ def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings:
     lines += [f"**{v['answer']}**", ""] + [f"- {s}" for s in v["summary"]] + [""]
     lines += [f"{v['level']}. {v['team']} Loop version {v['version']}. Debrief {v['as_of'][:10]}.", "", v["lede"], ""]
     by = f" By {v['by']}." if v["by"] else ""
-    lines += ["## Decision", "", f"**Owner: {v['owner']}.**{by} {v['decision']}", ""]
-    lines += [
-        "## Candidates against the bar",
-        "",
-        "| Candidate | Overall | Bar | Band | Evals | Cost | Restraint | Counted | Not counted |",
-        "|---|---|---|---|---|---|---|---|---|",
-    ]
+    lines += ["## What to do next", "", f"**Decides: {v['owner']}.**{by} {v['decision']}", ""]
+    ai = v["ai_areas"]
+    heads = ["Candidate", "Overall", "Target", "Verdict", *(f"{ai.get(k, k)} (task)" for k in ("evals", "cost", "restraint")), "Counted", "Not counted"]
+    lines += ["## Candidates against the target", "", "| " + " | ".join(heads) + " |", "|" + "---|" * len(heads)]
     for r in v["candidates"]:
-        ai = {k: x or "none" for k, x in r["ai_judgment"].items()}
-        cols = [r["candidate"], r["overall"] or "none", r["bar"], r["band"], ai["evals"], ai["cost"], ai["restraint"], r["eligible"], r["excluded"]]
+        aj = {k: x or "none" for k, x in r["ai_judgment"].items()}
+        cols = [r["candidate"], r["overall"] or "none", r["bar"], r["verdict"], aj["evals"], aj["cost"], aj["restraint"], r["eligible"], r["excluded"]]
         lines.append("| " + " | ".join(str(c) for c in cols) + " |")
-    lines += ["", "The overall score summarises; it does not decide. Read the competency rows and the evidence first.", ""]
+    lines += ["", "The overall score summarises; it does not decide. Read the skill area rows and the evidence first.", ""]
     for r in v["candidates"]:
-        lines += [f"## {r['candidate']}: {r['band']}", "", r["why"], "", "| Competency | Weight | Mean | Interviewers | Spread |", "|---|---|---|---|---|"]
+        lines += [f"## {r['candidate']}: {r['verdict']}", "", r["why"], "", "| Skill area | Weight | Mean | Floor | Interviewers | Spread |", "|---|---|---|---|---|---|"]
         for c in r["competencies"]:
-            lines.append(f"| {c['id']} {cell(c['name'])} | {c['weight']} | {c['mean'] or 'none'} | {c['raters']} | {c['spread'] or 'none'} |")
+            lines.append(f"| {c['id']} {cell(c['name'])} | {c['weight']} | {c['mean'] or 'none'} | {c['floor'] or 'none'} | {c['raters']} | {c['spread'] or 'none'} |")
         lines.append("")
         if r["flags"]:
             lines += ["To discuss:", ""] + [f"- {f['message']}" for f in r["flags"]] + [""]
     if v["pool_flags"]:
         lines += ["## Interviewer calibration", ""] + [f"- {f['message']}" for f in v["pool_flags"]] + [""]
-    lines += ["## Fairness guardrails", ""] + [f"- **{k}.** {t}" for k, t in v["guardrails"]] + [""]
+    lines += ["## Fairness checks", ""] + [f"- **{k}.** {t}" for k, t in v["guardrails"]] + [""]
     if v["warnings"]:
         lines += ["## Warnings", ""] + [f"- {cell(w)}" for w in v["warnings"]] + [""]
-    lines += ["## Calibration steps", ""] + [f"{n}. {s}" for n, s in enumerate(v["steps"], 1)] + [""]
+    lines += ["## How the debrief runs", ""] + [f"{n}. {s}" for n, s in enumerate(v["steps"], 1)] + [""]
     lines += [v["foot"], ""]
     return "\n".join(lines)
 

@@ -4,7 +4,7 @@ description: Designs a structured hiring loop for an AI-fluent product, design o
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.3.0"
+  version: "0.3.1"
 ---
 
 # AI-native hiring loop
@@ -89,7 +89,7 @@ What each stage asked is taken from the items scored, so a skipped question show
 python3 scripts/run.py score run/loop.json run/scores/*.json --out run/out
 ```
 
-If any guardrail fails it prints every error and writes nothing. Otherwise it writes `packet.html` (one self-contained page in the Leader Report style), `packet.md` (its plain-text twin), `results.json` and `ledger.csv`. Every figure carries value, unit, source, window (from the first score to the debrief start) and as_of. Show the user the packet: each candidate's overall score, band (`meets bar`, `below bar` or `insufficient evidence`), the three AI-judgment scores, and what to discuss (interviewer spread, near the bar, under a floor, interviewer drift across the pool). Read `references/method.md` before explaining a figure.
+If any guardrail fails it prints every error and writes nothing. Otherwise it writes `packet.html` (one self-contained page in the Leader Report style), `packet.md` (its plain-text twin), `results.json` and `ledger.csv`. Every figure carries value, unit, source, window (from the first score to the debrief start) and as_of. Show the user the packet: each candidate's overall score, band (`meets bar`, `below bar` or `insufficient evidence`), the three AI-judgment scores, and what to discuss (interviewer spread, near the bar, under a floor, interviewer drift across the pool). Read `references/method.md` before explaining a figure. The packet and its twin print the bands in plain words (meets the target, below the target, not enough evidence), the bar as the target and a competency as a skill area; use the same words with the user. `results.json` keeps the stored words.
 
 ### 5. Run calibration
 

@@ -1,6 +1,6 @@
 [project]
 name = "ai-native-hiring-loop"
-version = "0.3.0"
+version = "0.3.1"
 description = "A skill that designs a hiring loop for an AI-fluent product, design or engineering role, and combines its scores in code."
 requires-python = ">=3.11"
 # Standard library only, on purpose: the scripts run inside sandboxes that cannot install packages.
@@ -11,7 +11,7 @@ line-length = 180
 target-version = "py311"
 
 # Copied unchanged from the Leader Report at a pinned commit (VENDORED.json); never edited here.
-extend-exclude = ["skills/ai-native-hiring-loop/assets/vendor"]
+extend-exclude = ["skills/ai-native-hiring-loop/assets/vendor", "skills/ai-native-hiring-loop/scripts/vendor"]
 
 [tool.ruff.lint]
 # E, F: errors and unused names. I: import order. B: likely bugs. UP: old syntax.

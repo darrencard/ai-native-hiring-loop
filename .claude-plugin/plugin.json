@@ -1,6 +1,6 @@
 {
   "name": "ai-native-hiring-loop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Design a structured hiring loop for an AI-fluent product, design or engineering role: a scorecard, work samples that test judgment in AI use, structured questions and a calibration packet. Code scores every sheet against the rubric, every candidate gets the same questions, scores recorded after the debrief starts do not count, protected attributes block the packet, and a named hiring manager decides. A team-level skill beside the Landing Loop: it hires the people who run the bets and writes no bet record.",
   "author": { "name": "Dacard" },
   "license": "MIT"

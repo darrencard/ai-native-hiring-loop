@@ -24,7 +24,9 @@ sys.path.insert(0, str(SKILL / "scripts"))
 
 import guardrails  # noqa: E402
 import importer  # noqa: E402
+import render_html  # noqa: E402
 import run  # noqa: E402
+import svgkit  # noqa: E402
 
 CANDIDATES = ("K-01", "K-02", "K-03")
 SAMPLE_FILES = ("ai-native-hiring-loop.html", "ai-native-hiring-loop.md", "kit.md", "ledger.csv")
@@ -75,15 +77,24 @@ class Sample(unittest.TestCase):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
         self.assertNotRegex(html, r"""(src|href)=["']https?://""")
         self.assertNotIn("@import", html)
-        self.assertIn('class="ill">Illustrative', html)
+        self.assertIn('<span class="sk-ill">Illustrative</span>', html)
+        self.assertIn(":root{--ill:#74A5DA}", html, "the Illustrative tag is blue")
         self.assertIn("Illustrative", (SAMPLE / "ai-native-hiring-loop.md").read_text(encoding="utf-8"))
 
     def test_brass_marks_only_the_hiring_managers_call(self):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
-        body = re.sub(r"<style>.*?</style>", "", html, flags=re.S)
-        brass = re.findall(r'style="color:var\(--brass\)[^"]*">([^<]*)<', body)
-        self.assertEqual(brass, ["Head of Product, Quoting squad", "by 2026-11-23"])
-        self.assertEqual(body.count('class="need"'), 1)
+        css = html.split("</style>", 1)[0].split(svgkit.CSS, 1)[1]
+        rules = re.findall(r"[^}]*var\(--brass[^}]*}", css)
+        self.assertTrue(rules and all(r.lstrip().startswith((".next", "}.next")) for r in rules), "brass is only the hiring manager's box")
+        body = re.sub(r"<svg.*?</svg>", "", html.split("</style>", 1)[1], flags=re.S)
+        self.assertNotIn("--brass", body)
+        self.assertEqual(re.findall(r'class="o">([^<]*)<', body), ["Head of Product, Quoting squad"])
+        self.assertEqual(re.findall(r'class="d">([^<]*)<', body), ["2026-11-23"])
+        self.assertEqual(body.count('class="next"'), 1)
+        wide, tall = svgkit.visuals_in(html)
+        brass = lambda svg: [t for t in re.findall(r'style="color:var\(--brass\)">([^<]*)<', svg)]  # noqa: E731
+        self.assertEqual(brass(wide), ["HEAD OF PRODUCT, QUOTING SQUAD DECIDES BY 2026-11-23"])
+        self.assertEqual(brass(tall), ["HEAD OF PRODUCT, QUOTING SQUAD", "DECIDES BY 2026-11-23"])
 
     def test_no_status_colour_or_word_on_the_page(self):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
@@ -91,6 +102,9 @@ class Sample(unittest.TestCase):
         for colour in ("--landed", "--watch", "--stalled", 'class="st ', "ac landed", "rd "):
             self.assertNotIn(colour, body)
         self.assertIsNone(STATUS.search(visible(html)))
+        for svg in svgkit.visuals_in(html):
+            for colour in ("--landed", "--watch", "--stalled", "sk-st"):
+                self.assertNotIn(colour, svg)
 
 
 class Figures(unittest.TestCase):
@@ -223,13 +237,17 @@ class Versions(unittest.TestCase):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
         skill = re.search(r'version: "([^"]+)"', (SKILL / "SKILL.md").read_text(encoding="utf-8")).group(1)
-        self.assertEqual({plugin, project, skill}, {"0.3.0"})
-        self.assertIn("## 0.3.0, 2026-11-26", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
+        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.1"})
+        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.1, 2026-11-27"))
 
     def test_vendored_files_match_their_pins(self):
         pins = json.loads((SKILL / "VENDORED.json").read_text(encoding="utf-8"))
-        for path, pin in pins["files"].items():
-            self.assertEqual(hashlib.sha256((SKILL / path).read_bytes()).hexdigest(), pin["sha256"], path)
+        svgkit_pin = pins["landing-loop"]
+        self.assertEqual(svgkit_pin["commit"], "5d01756d08ab3eb92b457c3286729791df6bcf5f")
+        for path, pin in {**pins["files"], **svgkit_pin["files"]}.items():
+            self.assertEqual(hashlib.sha256((SKILL / path).read_bytes()).hexdigest(), pin["sha256"], f"{path} changed. Copy it again from its pinned commit.")
+        self.assertEqual(sorted(p.name for p in (SKILL / "scripts" / "vendor").glob("*.py")), ["svgkit.py"])
+        self.assertEqual(svgkit_pin["files"]["scripts/vendor/svgkit.py"]["sha256"], "8526cf100159a9e5a8958bba4ceb0373a7edc265f481d63795d1731a5999d054")
 
     def test_old_python_is_refused_with_a_message(self):
         text = (SKILL / "scripts" / "run.py").read_text(encoding="utf-8")
@@ -246,14 +264,24 @@ class FixRound(unittest.TestCase):
     def setUpClass(cls):
         cls.page = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
 
-    def test_top_is_an_answer_five_lines_and_the_decision_then_one_fold(self):
-        top, rest = self.page.split('<details class="more">', 1)
-        self.assertEqual(self.page.count('<details class="more">'), 1)
-        self.assertIn('<p class="answer">1 of 3 candidates meets the bar of 3.00: K-01.</p>', top)
-        self.assertEqual(re.search(r'<ul class="five">(.*?)</ul>', top, re.S).group(1).count("<li>"), 5)
-        self.assertIn('class="need"', top)
-        self.assertNotIn('class="need"', rest)
-        self.assertLess(len(visible(top).split()), 250, "the unfolded top must read in 30 seconds")
+    def test_the_page_follows_the_sample_anatomy(self):
+        body = self.page.split('<main class="solo">', 1)[1]
+        order = [
+            'class="sk-hdr"',
+            "<h1>1 of 3 candidates meets the target of 3.00: K-01.</h1>",
+            '<span class="status">K-01: meets the target</span>',
+            'class="sk-wide"',
+            "What to do next",
+            'class="cols"',
+            "<details><summary>Each candidate in full</summary>",
+            "<details><summary>Every figure, with its source</summary>",
+            "<details><summary>For your engineers</summary>",
+        ]
+        at = [body.index(x) for x in order]
+        self.assertEqual(at, sorted(at))
+        self.assertNotIn("<table", body.split("<details>", 1)[0], "every table is folded")
+        top = body.split('<section class="slide">', 1)[0]
+        self.assertLess(len(svgkit.page_text(top).split()), 250, "the unfolded top must read in 30 seconds")
 
     def test_owner_is_one_org_chart_role_and_no_invented_person(self):
         loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
@@ -318,6 +346,77 @@ class FixRound(unittest.TestCase):
             self.assertEqual(r.returncode, 1, path.name)
             self.assertIn("needs Python 3.11 or later; try python3.12", r.stderr)
             self.assertNotIn("Traceback", r.stderr)
+
+
+class Visual(unittest.TestCase):
+    """Each candidate against the target, each skill area against its floor, the person who decides in brass."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
+        cls.visuals = svgkit.visuals_in(cls.page)
+
+    def test_a_wide_and_a_tall_variant(self):
+        self.assertEqual(len(self.visuals), 2)
+        self.assertIn('class="sk-wide"', self.visuals[0])
+        self.assertIn('viewBox="0 0 720 ', self.visuals[0])
+        self.assertIn('class="sk-tall"', self.visuals[1])
+        self.assertIn('viewBox="0 0 340 ', self.visuals[1])
+
+    def test_the_visual_draws_only_figures_the_page_prints(self):
+        self.assertEqual(svgkit.unprinted(self.page), [])
+
+    def test_one_block_per_candidate_and_a_floor_mark_per_floored_area(self):
+        loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
+        floored = sum(1 for c in loop["competencies"] if "floor" in c)
+        for svg in self.visuals:
+            texts = svgkit.texts_in(svg)
+            for c in CANDIDATES:
+                self.assertEqual(texts.count(c), 1, c)
+            self.assertEqual(texts.count("TARGET 3.00"), len(CANDIDATES))
+            self.assertEqual(texts.count("FLOOR 2.50"), floored * len(CANDIDATES))
+            self.assertEqual(texts.count("MEETS THE TARGET") + texts.count("BELOW THE TARGET"), len(CANDIDATES))
+            hid = re.search(r'<pattern id="([^"]+)"', svg).group(1)
+            # K-02 under its floor on Restraint; K-03 under the target and under its floor on Eval design.
+            self.assertEqual(svg.count(f'fill="url(#{hid})"'), 3)
+        ids = re.findall(r'<pattern id="([^"]+)"', self.page)
+        self.assertEqual(len(ids), len(set(ids)), "each SVG has its own hatch id")
+
+    def test_the_visual_states_the_answer(self):
+        for svg in self.visuals:
+            self.assertIn('role="img"', svg)
+            label = html_unescape(re.search(r'aria-label="([^"]+)"', svg).group(1))
+            self.assertEqual(
+                label,
+                "1 of 3 candidates meets the target of 3.00: K-01; K-01 scores 3.33 overall, meets the target; "
+                "K-02 scores 3.23 overall, below the target, under its floor on Restraint; "
+                "K-03 scores 2.75 overall, below the target, under its floor on Eval design. "
+                "Head of Product, Quoting squad decides by 2026-11-23.",
+            )
+
+    def test_public_copy_uses_the_plain_words(self):
+        # The ledger and the engineers fold print the stored words; everything before them is public copy.
+        public = svgkit.page_text(self.page.split("<details><summary>Every figure, with its source", 1)[0]).lower()
+        public += " " + " ".join(t for svg in self.visuals for t in svgkit.texts_in(svg)).lower()
+        md = (SAMPLE / "ai-native-hiring-loop.md").read_text(encoding="utf-8").lower()
+        for text in (public, md):
+            for word in (" bar", "band", "competenc", "rubric", "anchor", "insufficient evidence", " items", "bet ", "record key", "landing/"):
+                self.assertNotIn(word, text)
+
+    def test_check_note_reads_the_plain_band_words(self):
+        import packet
+
+        out = build()
+        loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
+        self.assertEqual(packet.check_note("K-01 meets the target.", loop, out["results"], out["ledger"]), [])
+        found = packet.check_note("K-02 meets the target.", loop, out["results"], out["ledger"])
+        self.assertEqual([f["rule"] for f in found], ["band-mismatch"])
+
+
+def html_unescape(text: str) -> str:
+    import html
+
+    return html.unescape(text)
 
 
 class Readme(unittest.TestCase):

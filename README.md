@@ -22,7 +22,7 @@ Acme is invented: invoicing software for trades businesses. The role is a Senior
 python3 examples/acme/sample.py
 ```
 
-It renders [examples/acme/ai-native-hiring-loop.html](examples/acme/ai-native-hiring-loop.html) (one self-contained page in the Product & Technology Leader Report style), its Markdown twin, the interview kit and the evidence ledger, in under a second. A test checks the command reproduces the committed files byte for byte.
+It renders [examples/acme/ai-native-hiring-loop.html](examples/acme/ai-native-hiring-loop.html) (one self-contained page in the Product & Technology Leader Report style and the Landing Loop's visual family), its Markdown twin, the interview kit and the evidence ledger, in under a second. A test checks the command reproduces the committed files byte for byte.
 
 | Candidate | Overall | Bar | Band | Evals | Cost | Restraint |
 |---|---|---|---|---|---|---|
@@ -30,7 +30,7 @@ It renders [examples/acme/ai-native-hiring-loop.html](examples/acme/ai-native-hi
 | K-02 | 3.23 | 3.00 | below bar | 4.00 | 3.00 | 1.50 |
 | K-03 | 2.75 | 3.00 | below bar | 2.00 | 3.00 | 3.00 |
 
-K-02 clears the overall bar but is below bar: restraint sits under its floor. K-03's interviewers differ by 2 points on eval design, so the packet puts that first in the debrief. The Head of Product, Quoting squad, decides by 2026-11-23. The page opens with a one-line answer, five summary lines and that decision; the rest folds away.
+K-02 clears the overall bar but is below bar: restraint sits under its floor. K-03's interviewers differ by 2 points on eval design, so the packet puts that first in the debrief. The Head of Product, Quoting squad, decides by 2026-11-23. The page opens with the answer, each candidate's verdict and a picture of every candidate against the target, each skill area against its floor and the hiring manager in brass, then that decision; the detail folds away. It prints the bands in plain words: meets the target, below the target, not enough evidence.
 
 ## Install
 
@@ -99,6 +99,6 @@ python3 -m unittest discover -s evals -v
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Version 0.3.0. Made by [Dacard](https://www.dacard.ai).
+MIT. See [LICENSE](LICENSE). Version 0.3.1. Made by [Dacard](https://www.dacard.ai).
 
 Claude and Claude Code are trademarks of Anthropic, PBC. These skills are independent and not affiliated with or endorsed by Anthropic.
