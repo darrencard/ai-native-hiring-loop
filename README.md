@@ -8,6 +8,8 @@ Replace `ROLE`, for example "a senior product manager for our AI assistant".
 
 A free Claude skill that designs a structured hiring loop for an AI-fluent product, design or engineering role, then scores every interview sheet against the rubric in code.
 
+A bet is a project you expect to move a number; its bar is the target its landing brief sets.
+
 **Why it matters:** anyone can say they use AI. This loop tests, in a work sample, whether a candidate writes evals, weighs cost per task and knows when not to use a model. Every candidate gets the same questions, and every score is recorded before anyone talks.
 
 **Who decides:** a named hiring manager. Code sets each candidate's band (`meets bar`, `below bar` or `insufficient evidence`, printed as meets the target, below the target or not enough evidence) against the target the loop set. It never says hire.
@@ -99,6 +101,6 @@ python3 -m unittest discover -s evals -v
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Version 0.3.3. Made by [Dacard](https://www.dacard.ai).
+MIT. See [LICENSE](LICENSE). Version 0.3.4. Made by [Dacard](https://www.dacard.ai).
 
 Claude and Claude Code are trademarks of Anthropic, PBC. These skills are independent and not affiliated with or endorsed by Anthropic.

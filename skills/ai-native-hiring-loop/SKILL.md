@@ -4,14 +4,14 @@ description: Designs a structured hiring loop for an AI-fluent product, design o
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.3.3"
+  version: "0.3.4"
 ---
 
 # AI-native hiring loop
 
 Designs one loop for one role, then combines its scores. Two files carry everything: `loop.json` (the design) and one score sheet per candidate. The scripts in `scripts/` check both, compute every figure and write the packet.
 
-A team-level skill, outside the Landing Loop's project files: it hires the people who run the projects, and it writes no key in any `landing/<bet>.json`. Python 3.11 or later, standard library only. Say project, not bet, to the user, unless they say bet; then use their word.
+A team-level skill, outside the Landing Loop's project files: it hires the people who run the projects, and it writes no key in any `landing/<bet>.json`. Python 3.11 or later, standard library only. Say project to the user. Use the user's word, project or bet; the record key stays `bet`.
 
 Everything runs locally. The scripts make no network calls. Candidate data is personal data: do not send it anywhere, and do not keep it in the repository (`run/` is ignored).
 

@@ -89,14 +89,14 @@ class Sample(unittest.TestCase):
         body = re.sub(r"<svg.*?</svg>", "", html.split("</style>", 1)[1], flags=re.S)
         self.assertNotIn("--brass", body)
         self.assertEqual(re.findall(r'class="o">([^<]*)<', body), ["Head of Product, Quoting squad"])
-        self.assertEqual(re.findall(r'class="d">([^<]*)<', body), ["2026-11-23"])
+        self.assertEqual(re.findall(r'class="d"><span class="nw">([^<]*)<', body), ["2026-11-23"])
         self.assertEqual(body.count('class="next"'), 1)
         # In the rows, brass is the person who decides, once, in the frame head: never in a row.
         frame = svgkit.frames_in(html)[0]
         self.assertEqual(re.findall(r'<span class="sc-o">.*?</svg>([^<]+)</span>', frame), ["Head of Product, Quoting squad decides"])
         head = frame.split('<div class="sc-b">', 1)[0]
         self.assertIn('class="sc-o"', head)
-        self.assertIn('<span class="sc-w">by 2026-11-23</span>', head)
+        self.assertIn('<span class="sc-w">by <span class="nw">2026-11-23</span></span>', head)
 
     def test_no_status_colour_or_word_on_the_page(self):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
@@ -237,8 +237,8 @@ class Versions(unittest.TestCase):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
         skill = re.search(r'version: "([^"]+)"', (SKILL / "SKILL.md").read_text(encoding="utf-8")).group(1)
-        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.3"})
-        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.3, 2026-11-27"))
+        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.4"})
+        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.4, 2026-11-27"))
 
     def test_vendored_files_match_their_pins(self):
         pins = json.loads((SKILL / "VENDORED.json").read_text(encoding="utf-8"))
@@ -431,12 +431,12 @@ class Visual(unittest.TestCase):
             # The words a reader outside the loop does not know, as whole words.
             self.assertEqual(re.findall(r"\b(records?|bets?|the bar|prds?|arr|tokens?)\b", text), [])
 
-    def test_no_text_smaller_than_11px_at_any_width(self):
+    def test_no_text_smaller_than_12px_at_any_width(self):
         css = " ".join(re.findall(r"<style>(.*?)</style>", self.page, re.S) + re.findall(r'style="([^"]*)"', self.page))
         sizes = [float(m) for m in re.findall(r"(?:font-size:\s*|font:[^;{}]*?)(\d+(?:\.\d+)?)px", css)]
         sizes += [float(m) for m in re.findall(r'font-size="(\d+(?:\.\d+)?)"', self.page)]
         self.assertTrue(sizes)
-        self.assertGreaterEqual(min(sizes), 11)
+        self.assertGreaterEqual(min(sizes), 12)
         # The vendored template is untouched on disk: the page raises its small sizes as it inlines them.
         template = ROOT / "skills/ai-native-hiring-loop/assets/vendor/template.html"
         self.assertIn("font:400 10px/16px", template.read_text(encoding="utf-8"))
