@@ -83,7 +83,7 @@ class Sample(unittest.TestCase):
 
     def test_brass_marks_only_the_hiring_managers_call(self):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
-        css = html.split("</style>", 1)[0].split(svgkit.CSS, 1)[1]
+        css = html.split("</style>", 1)[0].split(render_html.floor_fonts(svgkit.CSS), 1)[1]
         rules = re.findall(r"[^}]*var\(--brass[^}]*}", css)
         self.assertTrue(rules and all(r.lstrip().startswith((".next", "}.next")) for r in rules), "brass is only the hiring manager's box")
         body = re.sub(r"<svg.*?</svg>", "", html.split("</style>", 1)[1], flags=re.S)
@@ -268,7 +268,7 @@ class FixRound(unittest.TestCase):
         body = self.page.split('<main class="solo">', 1)[1]
         order = [
             'class="sk-hdr"',
-            "<h1>1 of 3 candidates meets the target of 3.00: K-01.</h1>",
+            '<h1>One of three candidates, <span class="nw">K-01</span>, meets the hiring target.</h1>',
             '<span class="status">K-01: meets the target</span>',
             'class="sk-wide"',
             "What to do next",
@@ -388,7 +388,7 @@ class Visual(unittest.TestCase):
             label = html_unescape(re.search(r'aria-label="([^"]+)"', svg).group(1))
             self.assertEqual(
                 label,
-                "1 of 3 candidates meets the target of 3.00: K-01; K-01 scores 3.33 overall, meets the target; "
+                "One of three candidates, K-01, meets the hiring target of 3.00; K-01 scores 3.33 overall, meets the target; "
                 "K-02 scores 3.23 overall, below the target, under its floor on Restraint; "
                 "K-03 scores 2.75 overall, below the target, under its floor on Eval design. "
                 "Head of Product, Quoting squad decides by 2026-11-23.",
@@ -402,6 +402,32 @@ class Visual(unittest.TestCase):
         for text in (public, md):
             for word in (" bar", "band", "competenc", "rubric", "anchor", "insufficient evidence", " items", "bet ", "record key", "landing/"):
                 self.assertNotIn(word, text)
+            # The words a reader outside the loop does not know, as whole words.
+            self.assertEqual(re.findall(r"\b(records?|bets?|the bar|prds?|arr|tokens?)\b", text), [])
+
+    def test_no_text_smaller_than_11px_at_any_width(self):
+        css = " ".join(re.findall(r"<style>(.*?)</style>", self.page, re.S) + re.findall(r'style="([^"]*)"', self.page))
+        sizes = [float(m) for m in re.findall(r"(?:font-size:\s*|font:[^;{}]*?)(\d+(?:\.\d+)?)px", css)]
+        sizes += [float(m) for m in re.findall(r'font-size="(\d+(?:\.\d+)?)"', self.page)]
+        self.assertTrue(sizes)
+        self.assertGreaterEqual(min(sizes), 11)
+        # The vendored template is untouched on disk: the page raises its small sizes as it inlines them.
+        template = ROOT / "skills/ai-native-hiring-loop/assets/vendor/template.html"
+        self.assertIn("font:400 10px/16px", template.read_text(encoding="utf-8"))
+
+    def test_header_prints_the_plain_name_and_the_fold_the_code_name(self):
+        header = re.search(r'<header class="sk-hdr">.*?</header>', self.page, re.S).group(0)
+        self.assertIn("<span>AI-native hiring loop</span>", header)
+        self.assertNotIn("ai-native-hiring-loop", header)
+        self.assertIn("<code>ai-native-hiring-loop</code>", self.page.split("<details><summary>For your engineers", 1)[1])
+
+    def test_the_heading_names_the_count_in_words(self):
+        import packet
+
+        self.assertEqual(packet.verdict_line(["K-01"], 3), "One of three candidates, K-01, meets the hiring target.")
+        self.assertEqual(packet.verdict_line(["K-01", "K-02"], 3), "Two of three candidates, K-01 and K-02, meet the hiring target.")
+        self.assertEqual(packet.verdict_line(["K-01", "K-02"], 2), "Both candidates, K-01 and K-02, meet the hiring target.")
+        self.assertEqual(packet.verdict_line([], 3), "None of the three candidates meets the hiring target.")
 
     def test_check_note_reads_the_plain_band_words(self):
         import packet
@@ -409,6 +435,9 @@ class Visual(unittest.TestCase):
         out = build()
         loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
         self.assertEqual(packet.check_note("K-01 meets the target.", loop, out["results"], out["ledger"]), [])
+        self.assertEqual(packet.check_note("K-01 meets the hiring target.", loop, out["results"], out["ledger"]), [])
+        found = packet.check_note("K-03 meets the hiring target.", loop, out["results"], out["ledger"])
+        self.assertEqual([f["rule"] for f in found], ["band-mismatch"])
         found = packet.check_note("K-02 meets the target.", loop, out["results"], out["ledger"])
         self.assertEqual([f["rule"] for f in found], ["band-mismatch"])
 

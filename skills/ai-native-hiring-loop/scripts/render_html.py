@@ -38,13 +38,25 @@ STYLE = re.compile(r"<style>(.*?)</style>", re.S)
 SCALE = (1, 4)  # the score scale; every line in the picture runs across it
 
 # Layout for this page only. Everything else comes from the template's stylesheet and svgkit.CSS.
+# The smallest text the page prints, at every width. The vendored template and svgkit keep their own sizes on disk
+# (both are hash-pinned); the page raises any smaller size to this one as it inlines their rules.
+FONT_FLOOR = 11
+FONT_SIZE = re.compile(r"(font-size:\s*|font:[^;{}]*?)(\d+(?:\.\d+)?)px")
+
+
+def floor_fonts(css: str) -> str:
+    """Every font size below FONT_FLOOR, raised to it: font-size and the size in a font shorthand."""
+    return FONT_SIZE.sub(lambda m: m.group(1) + (str(FONT_FLOOR) if float(m.group(2)) < FONT_FLOOR else m.group(2)) + "px", css)
+
+
 PAGE_CSS = """
+.nw{white-space:nowrap}
 main.solo{margin-left:0}
 .solo .slide{min-height:0}
 .solo .slide.cover{min-height:0;padding-top:40px;padding-bottom:48px;justify-content:flex-start}
 .solo h1{font-size:clamp(34px,4.6vw,60px);line-height:1;letter-spacing:-.04em;max-width:20ch;margin-bottom:20px}
 .solo .lede{margin-bottom:24px}
-.status{display:inline-block;font:400 10px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1)}
+.status{display:inline-block;font:400 11px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1)}
 .status{border:1px solid var(--line3);border-radius:3px;padding:1px 6px;white-space:nowrap}
 .verdict{margin:0 0 20px;display:flex;flex-wrap:wrap;gap:8px}
 .panel{border:1px solid var(--line);border-radius:12px;background:var(--s1);padding:24px 28px 20px}
@@ -52,10 +64,10 @@ main.solo{margin-left:0}
 .panel .sk figcaption{margin-top:0;flex-direction:column;align-items:flex-start}}
 .next{margin-top:28px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 32px;align-items:baseline}
 .next{border:1px solid var(--brass);border-radius:12px;padding:20px 24px;background:var(--brass-bg)}
-.next>b{font:400 10px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+.next>b{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
 .next p{margin:0;font-size:16px;line-height:1.5;color:var(--t1)}
 .next .who{display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:10px;font:400 11.5px/16px var(--mono);color:var(--brass)}
-.next .who span::before{font-size:10px;letter-spacing:.1em;color:var(--t3);margin-right:8px}
+.next .who span::before{font-size:11px;letter-spacing:.1em;color:var(--t3);margin-right:8px}
 .next .who .o::before{content:"DECIDES"}.next .who .d::before{content:"BY"}
 .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px 56px;align-items:start}
 .cols h3{margin-bottom:8px}
@@ -64,7 +76,7 @@ main.solo{margin-left:0}
 .cands li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;align-items:baseline}
 .cands li b{font-weight:500;color:var(--t1);font-size:14.5px}
 .cands li p{grid-column:1/-1;margin:0}
-.disc li span,.fair li span{display:block;font:400 10px/18px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.disc li span,.fair li span{display:block;font:400 11px/18px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .solo details{margin-top:4px}
 .solo details>*:not(summary){margin-top:12px}
 .solo details p,.solo details li{margin:0 0 10px;font-size:13px;color:var(--t2);max-width:80ch}
@@ -78,7 +90,7 @@ main.solo{margin-left:0}
 @media (max-width:980px){.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:24px}.cols,.next{grid-template-columns:1fr}.panel{padding:18px 16px 16px}
 .stack table,.stack tbody,.stack tr,.stack td{display:block}.stack tr:first-child{display:none}.stack tr{padding:10px 16px;border-bottom:1px solid var(--line)}
 .stack td{border:0;padding:3px 0;display:grid;grid-template-columns:118px 1fr;gap:12px}.stack td.num{text-align:left;white-space:normal}
-.stack td::before{content:attr(data-l);font:400 10px/20px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}}
+.stack td::before{content:attr(data-l);font:400 11px/20px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}}
 """
 
 
@@ -216,6 +228,11 @@ def candidates_chart(v: dict[str, Any], variant: str) -> str:
     return sk.frame("".join(parts), label=aria(v), height=height, width=width, variant=variant)
 
 
+def keep_ids(text: str) -> str:
+    """Escaped text with each candidate id (K-01) kept on one line, so a phone never breaks it at the hyphen."""
+    return re.sub(r"\b([A-Z]+-\d+)\b", r'<span class="nw">\1</span>', text)
+
+
 def aria(v: dict[str, Any]) -> str:
     """The answer the picture gives, in one sentence."""
     says = []
@@ -227,7 +244,7 @@ def aria(v: dict[str, Any]) -> str:
         under = f", under its floor on {' and '.join(floors)}" if floors else ""
         says.append(f"{r['candidate']} scores {r['overall']} overall, {r['verdict']}{under}")
     when = f" by {v['by']}" if v["by"] else ""
-    return f"{v['answer'][:-1]}; " + "; ".join(says) + f". {v['owner']} decides{when}."
+    return f"{v['answer'][:-1]} of {v['bar']}; " + "; ".join(says) + f". {v['owner']} decides{when}."
 
 
 # The page
@@ -284,6 +301,7 @@ def ledger_table(ledger: list[dict[str, Any]]) -> str:
 def engineers(v: dict[str, Any]) -> str:
     bands = ", ".join(f"{r['candidate']} <code>{e(r['band'])}</code>" for r in v["candidates"])
     return (
+        f"<p>Skill: <code>ai-native-hiring-loop</code> {e(VERSION)}.</p>"
         f"<p>Verdicts as results.json stores them: {bands}. The page prints bar as target, competency as skill area and rubric as scoring guide.</p>"
         "<p>Run: <code>python3 scripts/run.py score LOOP.json SHEET.json [SHEET.json ...] --out DIR</code> writes results.json, ledger.csv, "
         "packet.md and packet.html. Any guardrail error stops it before anything is written (exit code 1); a file that cannot be read exits 2. "
@@ -304,7 +322,7 @@ def page(
 ) -> str:
     v = view(loop, results, findings, pool_flags, guards)
     ill = v["illustrative"]
-    header = sk.page_header("ai-native-hiring-loop", date=v["as_of"][:10], version=f"v{VERSION}", illustrative=ill)
+    header = sk.page_header("AI-native hiring loop", date=v["as_of"][:10], version=f"v{VERSION}", illustrative=ill)
     pic = sk.figure(
         candidates_chart(v, "wide"),
         candidates_chart(v, "tall"),
@@ -319,7 +337,8 @@ def page(
     step = f'<div class="next"><b>What to do next</b><div><p>{e(v["decision"])}</p><span class="who">{who}{by}</span></div></div>'
     lede = f"{v['level']} role: {v['title'].removeprefix('Hiring loop: ')}. {v['lede']}"
     cover = (
-        f'<section class="slide cover">{header}<h1>{e(v["answer"])}</h1><p class="lede">{e(lede)}</p><p class="verdict">{chips}</p><div class="panel">{pic}</div>{step}</section>'
+        f'<section class="slide cover">{header}<h1>{keep_ids(e(v["answer"]))}</h1><p class="lede">{e(lede)}</p>'
+        f'<p class="verdict">{chips}</p><div class="panel">{pic}</div>{step}</section>'
     )
     detail = (
         '<section class="slide"><div class="meta"><span>What the scores say</span></div><div class="cols">'
@@ -338,6 +357,6 @@ def page(
     more = f'<section class="slide"><div class="meta"><span>Detail</span></div>{"".join(folds)}</section>'
     return (
         '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        f'<title>{e(v["title"])}</title><style>{stylesheet()}{sk.CSS}{PAGE_CSS}</style></head><body><main class="solo">{cover}{detail}{more}'
+        f'<title>{e(v["title"])}</title><style>{floor_fonts(stylesheet() + sk.CSS + PAGE_CSS)}</style></head><body><main class="solo">{cover}{detail}{more}'
         f'<p class="foot">{e(v["foot"])}</p></main></body></html>\n'
     )

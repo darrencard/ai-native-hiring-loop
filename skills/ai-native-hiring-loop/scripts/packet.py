@@ -39,8 +39,8 @@ OVERCLAIMS = (
     "a sure thing",
 )
 BAND_PHRASES = {
-    "meets bar": re.compile(r"\bmeets (?:the )?(?:bar|target)\b|\babove (?:the )?(?:bar|target)\b|\bclears (?:the )?(?:bar|target)\b"),
-    "below bar": re.compile(r"\bbelow (?:the )?(?:bar|target)\b|\bunder (?:the )?(?:bar|target)\b|\bmisses (?:the )?(?:bar|target)\b"),
+    "meets bar": re.compile(r"\bmeets? (?:the )?(?:hiring )?(?:bar|target)\b|\babove (?:the )?(?:hiring )?(?:bar|target)\b|\bclears (?:the )?(?:hiring )?(?:bar|target)\b"),
+    "below bar": re.compile(r"\bbelow (?:the )?(?:hiring )?(?:bar|target)\b|\bunder (?:the )?(?:hiring )?(?:bar|target)\b|\bmisses (?:the )?(?:hiring )?(?:bar|target)\b"),
     "insufficient evidence": re.compile(r"\binsufficient evidence\b|\bnot enough evidence\b"),
 }
 # A numbered-list marker ("5. Scores do not change") is a position, not a figure.
@@ -70,7 +70,10 @@ WORDS = (
     (r"\bcompetency rows\b", "skill area rows"),
     (r"\bthe rubric\b", "the scoring guide"),
     (r"\bthe band\b", "the verdict"),
+    (r"\binterviewer records every score\b", "interviewer submits every score"),
+    (r"\bScores recorded after it starts\b", "Scores submitted after it starts"),
 )
+COUNT_WORDS = ("none", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
 VERDICT = {"meets bar": "meets the target", "below bar": "below the target", "insufficient evidence": "not enough evidence"}
 
 
@@ -131,10 +134,10 @@ def render_kit(loop: dict[str, Any]) -> str:
     lines += [
         "## Calibration",
         "",
-        f"Bar: {cal['bar']} on a 1 to 4 scale. Panel: at least {cal['panel_min']} interviewers. Spread flag: {cal['spread_flag']} points.",
+        f"Target: {cal['bar']} on a 1 to 4 scale. Panel: at least {cal['panel_min']} interviewers. Spread flag: {cal['spread_flag']} points.",
         "",
     ]
-    lines += [f"{n}. {step}" for n, step in enumerate(cal["steps"], 1)]
+    lines += [f"{n}. {plain(step)}" for n, step in enumerate(cal["steps"], 1)]
     lines.append("")
     return "\n".join(lines)
 
@@ -218,6 +221,19 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
     }
 
 
+def count_word(n: int) -> str:
+    return COUNT_WORDS[n] if n < len(COUNT_WORDS) else str(n)
+
+
+def verdict_line(meets: list[str], n: int) -> str:
+    """The heading: how many candidates meet the hiring target, and which, in words."""
+    if not meets:
+        return f"None of the {count_word(n)} candidates meets the hiring target."
+    names = meets[0] if len(meets) == 1 else f"{', '.join(meets[:-1])} and {meets[-1]}"
+    lead = ("Both candidates" if n == 2 else f"All {count_word(n)} candidates") if len(meets) == n > 1 else f"{count_word(len(meets)).capitalize()} of {count_word(n)} candidates"
+    return f"{lead}, {names}, {'meets' if len(meets) == 1 else 'meet'} the hiring target."
+
+
 def _top(candidates: list[dict[str, Any]], pool_flags: list[dict[str, str]], g: dict[str, Any], bar: str) -> tuple[str, list[str]]:
     """The one-line answer and the five summary lines a leader reads first. Each band on its own line."""
     by_band: dict[str, list[dict[str, Any]]] = {"meets bar": [], "below bar": [], "insufficient evidence": []}
@@ -225,7 +241,7 @@ def _top(candidates: list[dict[str, Any]], pool_flags: list[dict[str, str]], g: 
         by_band.setdefault(r["band"], []).append(r)
     meets = [r["candidate"] for r in by_band["meets bar"]]
     n = len(candidates)
-    answer = f"{len(meets)} of {n} candidates meets the target of {bar}: {', '.join(meets)}." if meets else f"None of the {n} candidates meets the target of {bar}."
+    answer = verdict_line(meets, n)
 
     def listed(rs: list[dict[str, Any]]) -> str:
         if not rs:

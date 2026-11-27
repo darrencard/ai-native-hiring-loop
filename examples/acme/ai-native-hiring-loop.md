@@ -2,7 +2,7 @@
 
 *Illustrative. Acme is an invented company; every candidate, interviewer, name and score here is invented.*
 
-**1 of 3 candidates meets the target of 3.00: K-01.**
+**One of three candidates, K-01, meets the hiring target.**
 
 - Meets the target: K-01 (overall 3.33).
 - Below the target: K-02 (overall 3.23; under its floor on Restraint); K-03 (overall 2.75; under its floor on Eval design).
@@ -85,7 +85,7 @@ To discuss:
 
 ## How the debrief runs
 
-1. Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.
+1. Each interviewer submits every score, with written evidence, before the debrief starts. Scores submitted after it starts do not count.
 2. Interviewers do not see each other's scores or discuss the candidate until the debrief starts.
 3. The facilitator runs run.py score and shares the packet. Nobody states a view first.
 4. For each flagged skill area, the interviewers read their evidence aloud, lowest score first, and compare it with the scoring guide.

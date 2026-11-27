@@ -137,11 +137,11 @@ Ask every question, in this order, to every candidate. Score each against its co
 
 ## Calibration
 
-Bar: 3.0 on a 1 to 4 scale. Panel: at least 3 interviewers. Spread flag: 2 points.
+Target: 3.0 on a 1 to 4 scale. Panel: at least 3 interviewers. Spread flag: 2 points.
 
-1. Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.
+1. Each interviewer submits every score, with written evidence, before the debrief starts. Scores submitted after it starts do not count.
 2. Interviewers do not see each other's scores or discuss the candidate until the debrief starts.
 3. The facilitator runs run.py score and shares the packet. Nobody states a view first.
-4. For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.
-5. Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.
-6. The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent.
+4. For each flagged skill area, the interviewers read their evidence aloud, lowest score first, and compare it with the scoring guide.
+5. Scores do not change in the debrief. If an interviewer finds they misread the scoring guide, the decision note says so.
+6. The hiring manager decides against the verdict and the evidence, and writes the decision note; check-note checks it before it is sent.
