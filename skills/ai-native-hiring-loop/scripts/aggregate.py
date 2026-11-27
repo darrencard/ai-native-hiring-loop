@@ -21,10 +21,35 @@ from fractions import Fraction
 from typing import Any
 
 from guardrails import eligible_scores
-from schema import AI_JUDGMENT_KINDS, item_index
+from schema import AI_JUDGMENT_KINDS, item_index, min_scorers, stage_items, utc
 
 NEAR_BAR = Fraction(1, 4)
 DRIFT_FLAG = Fraction(3, 4)
+
+SCORE_UNIT = "score, 1 to 4"
+POINTS_UNIT = "points on the 1 to 4 scale"
+
+
+def figure(fid: str, candidate: str, label: str, value: str, unit: str, source: str, window: tuple[str, str], as_of: str, method: str) -> dict[str, Any]:
+    """One ledger row: every figure carries value, unit, source, window (from, to) and as_of."""
+    return {
+        "id": fid,
+        "candidate": candidate,
+        "figure": label,
+        "value": value,
+        "unit": unit,
+        "source": source,
+        "window": {"from": window[0], "to": window[1]},
+        "as_of": as_of,
+        "method": method,
+    }
+
+
+def candidate_window(sheet: dict[str, Any]) -> tuple[str, str]:
+    """From the first score recorded to the moment the debrief started. Only scores inside it count."""
+    started = utc(sheet["debrief_started_at"]) or ""
+    times = sorted(t for t in (utc(r.get("submitted_at")) for r in sheet.get("scores", [])) if t)
+    return (times[0] if times else started, started)
 
 
 def fmt(value: Fraction | None) -> str | None:
@@ -51,20 +76,13 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
     cal = loop["calibration"]
     bar = Fraction(str(cal["bar"]))
     spread_flag = cal["spread_flag"]
-    ledger: list[dict[str, str]] = []
+    ledger: list[dict[str, Any]] = []
+    window = candidate_window(sheet)
 
-    def row(fid: str, label: str, value: Fraction | int | None, positions: list[int], method: str) -> None:
+    def row(fid: str, label: str, value: Fraction | int | None, positions: list[int], method: str, unit: str = SCORE_UNIT) -> None:
         printed = fmt(value) if isinstance(value, Fraction) or value is None else str(value)
-        ledger.append(
-            {
-                "id": f"{cand}.{fid}",
-                "candidate": cand,
-                "figure": label,
-                "value": printed if printed is not None else "none",
-                "source": _refs(sheet_name, positions) if positions else "no eligible score",
-                "method": method,
-            }
-        )
+        source = _refs(sheet_name, positions) if positions else f"{sheet_name}: no eligible score"
+        ledger.append(figure(f"{cand}.{fid}", cand, label, printed if printed is not None else "none", unit, source, window, window[1], method))
 
     comps: list[dict[str, Any]] = []
     weighted = Fraction(0)
@@ -82,9 +100,9 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
         rater_means = {k: Fraction(sum(v), len(v)) for k, v in sorted(by_rater.items())}
         spread = max(rater_means.values()) - min(rater_means.values()) if rater_means else None
         row(f"{c['id']}.mean", f"{c['name']}: mean score (1 to 4)", mean, positions, "mean of eligible item scores")
-        row(f"{c['id']}.raters", f"{c['name']}: interviewers scoring", len(rater_means), positions, "count of distinct interviewers")
+        row(f"{c['id']}.raters", f"{c['name']}: interviewers scoring", len(rater_means), positions, "count of distinct interviewers", "interviewers")
         if spread is not None:
-            row(f"{c['id']}.spread", f"{c['name']}: spread between interviewers", spread, positions, "max minus min of interviewer means")
+            row(f"{c['id']}.spread", f"{c['name']}: spread between interviewers", spread, positions, "max minus min of interviewer means", POINTS_UNIT)
         if mean is None:
             missing = True
         else:
@@ -135,9 +153,11 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
     for cid, name, mean, floor in floor_breach:
         flags.append({"rule": "floor", "where": cid, "message": f"{name} is {fmt(mean)}, under its floor of {fmt(floor)}; the band is below bar whatever the overall score"})
 
-    excluded = len(sheet.get("scores", [])) - len(eligible)
-    row("eligible", "Scores counted", len(eligible), all_positions, "count of eligible scores")
-    row("excluded", "Scores not counted", excluded, [], "scores recorded after the debrief, unasked, duplicated or without evidence")
+    counted = {p for p, _ in eligible}
+    excluded_positions = [p for p in range(len(sheet.get("scores", []))) if p not in counted]
+    excluded = len(excluded_positions)
+    row("eligible", "Scores counted", len(eligible), all_positions, "count of eligible scores", "scores")
+    row("excluded", "Scores not counted", excluded, excluded_positions, "scores recorded after the debrief, unasked, duplicated or without evidence", "scores")
 
     return {
         "candidate": cand,
@@ -172,7 +192,8 @@ def interviewer_drift(loop: dict[str, Any], sheets: list[tuple[dict[str, Any], s
             refs.setdefault(r["interviewer"], []).append(f"{name}#scores[{pos}]")
             candidates.setdefault(r["interviewer"], set()).add(cand)
     flags: list[dict[str, str]] = []
-    ledger: list[dict[str, str]] = []
+    ledger: list[dict[str, Any]] = []
+    window = pool_window(sheets)
     for who in sorted(mine):
         if len(candidates[who]) < 2:
             continue
@@ -181,16 +202,66 @@ def interviewer_drift(loop: dict[str, Any], sheets: list[tuple[dict[str, Any], s
         panel = Fraction(sum(panel_vals), len(panel_vals))
         drift = own - panel
         ledger.append(
-            {
-                "id": f"pool.{who}.drift",
-                "candidate": "pool",
-                "figure": f"{who}: mean minus panel mean on the same items",
-                "value": fmt(drift),
-                "source": "; ".join(sorted(refs[who])),
-                "method": "interviewer mean minus mean of all eligible scores on the same candidate and item",
-            }
+            figure(
+                f"pool.{who}.drift",
+                "pool",
+                f"{who}: mean minus panel mean on the same items",
+                fmt(drift) or "none",
+                POINTS_UNIT,
+                "; ".join(sorted(refs[who])),
+                window,
+                window[1],
+                "interviewer mean minus mean of all eligible scores on the same candidate and item",
+            )
         )
         if abs(drift) >= DRIFT_FLAG:
             direction = "above" if drift > 0 else "below"
             flags.append({"rule": "drift", "where": who, "message": f"{who} scores {fmt(abs(drift))} {direction} the panel on the same items; review their anchors"})
     return flags, ledger
+
+
+def pool_window(sheets: list[tuple[dict[str, Any], str]]) -> tuple[str, str]:
+    """From the first score in the pool to the last debrief start."""
+    windows = [candidate_window(s) for s, _ in sheets]
+    return (min(w[0] for w in windows), max(w[1] for w in windows)) if windows else ("", "")
+
+
+def guardrail_figures(loop: dict[str, Any], sheets: list[tuple[dict[str, Any], str]]) -> list[dict[str, Any]]:
+    """The fairness figures the packet prints, computed from the sheets that passed every guardrail.
+
+    The packet only exists if every guardrail passed, so these restate what was checked as counts a reader can trace.
+    """
+    window = pool_window(sheets)
+    names = "; ".join(name for _, name in sheets)
+    required = stage_items(loop)
+    items = sum(len(v) for v in required.values())
+    same = sum(1 for s, _ in sheets if {k: list(v) for k, v in (s.get("asked") or {}).items()} == required)
+    late = 0
+    counted = 0
+    for s, _ in sheets:
+        start = utc(s["debrief_started_at"])
+        late += sum(1 for r in s.get("scores", []) if (utc(r.get("submitted_at")) or "") >= (start or ""))
+        counted += len(eligible_scores(loop, s))
+    need = min_scorers(loop)
+    ws = [st["id"] for st in loop["stages"] if st["kind"] == "work_sample"]
+    least = None
+    for s, _ in sheets:
+        for sid in ws:
+            for item in required[sid]:
+                n = len({r["interviewer"] for _, r in eligible_scores(loop, s) if r["item"] == item})
+                least = n if least is None else min(least, n)
+    rows = [
+        ("candidates", "Candidates in the pool", len(sheets), "candidates", "count of score sheets"),
+        ("items", "Items every candidate must get", items, "items", "count of criteria and questions in the loop"),
+        ("same_questions", "Candidates asked exactly those items, in order", same, "candidates", "sheets whose asked list matches the loop"),
+        ("counted", "Scores counted", counted, "scores", "eligible scores across the pool"),
+        ("after_debrief", "Scores recorded at or after the debrief started", late, "scores", "submitted_at at or after debrief_started_at; any one blocks the packet"),
+        (
+            "work_sample_scorers",
+            "Fewest independent scorers on any work-sample criterion",
+            least if least is not None else 0,
+            "interviewers",
+            f"minimum distinct interviewers per criterion; the loop needs {max([need[s] for s in ws] or [0])}",
+        ),
+    ]
+    return [figure(f"pool.{fid}", "pool", label, str(v), unit, names, window, window[1], method) for fid, label, v, unit, method in rows]

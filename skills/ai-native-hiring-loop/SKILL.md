@@ -4,12 +4,14 @@ description: Designs a structured hiring loop for an AI-fluent product, design o
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.1.0"
+  version: "0.3.0"
 ---
 
 # AI-native hiring loop
 
 Designs one loop for one role, then combines its scores. Two files carry everything: `loop.json` (the design) and one score sheet per candidate. The scripts in `scripts/` check both, compute every figure and write the packet.
+
+A team-level skill, outside the Landing Loop's bet record: it hires the people who run the bets, and it writes no key in any `landing/<bet>.json`. Python 3.11 or later, standard library only.
 
 Everything runs locally. The scripts make no network calls. Candidate data is personal data: do not send it anywhere, and do not keep it in the repository (`run/` is ignored).
 
@@ -20,16 +22,18 @@ python3 scripts/run.py demo --out run/demo
 python3 scripts/run.py new --role pm --out run/loop.json
 ```
 
-`demo` runs the illustrative Acme example (`assets/example/acme/`) end to end; show the user `run/demo/packet.md` so they see the output first. `new` copies a starter for `pm`, `designer` or `engineer` that already passes every design check. Then replace its outcomes with the user's own (step 1), adjust weights and anchors, and run `check-design`.
+`demo` runs the illustrative Acme example (`assets/example/acme/`) end to end; show the user `run/demo/packet.html` (or its Markdown twin, `packet.md`) so they see the output first. `new` copies a starter for `pm`, `designer` or `engineer` that passes every design check except one: it asks for the hiring manager's name in `decision.owner`. Then replace its outcomes with the user's own (step 1), adjust weights and anchors, and run `check-design`.
 
-## The 4 rules that override everything else
+## The 5 rules that override everything else
 
 1. **Never do arithmetic yourself.** `scripts/run.py score` computes every mean, the overall score, the band and every flag, and writes a ledger row for each. If a number is not in `ledger.csv`, it does not go in a note or a message.
 2. **Never talk past a guardrail.** If a check reports an error, fix the loop or the sheet. Do not edit a rule, reword a question to dodge it, or back-date a timestamp.
 3. **Same questions, every candidate.** The kit is fixed once `check-design` passes. A stage that skipped or added a question blocks the packet for the whole pool. Changing the loop means a new `version` and a fresh pool.
 4. **Scores before discussion.** Each interviewer records every score, with written evidence, before the debrief starts. A score recorded at or after `debrief_started_at` does not count and blocks the packet until the sheet is corrected by the person who owns it. Do not help anyone revise a score after hearing others.
 
-The skill recommends; a named hiring manager decides. Never state that a candidate should be hired or rejected. Say what band the code reached and what the evidence shows.
+5. **Codes, not people.** Sheets carry candidate codes (K-01), never names. A sheet field for a name, age, photo or school, or evidence that mentions a protected attribute (age, pregnancy, religion, nationality and the like), blocks the packet. Ask the interviewer to rewrite the evidence about the work.
+
+Code scores; a named hiring manager decides (`decision.owner` in the loop; scoring is blocked without one). Never state that a candidate should be hired or rejected. Say what band the code reached and what the evidence shows.
 
 If the user asks for a claim the scores do not support ("K-02 is the best candidate", "they will succeed", "top 10%"), say the note cannot state it, and offer the sentence the ledger supports.
 
@@ -48,7 +52,8 @@ Ask only what you cannot infer. You need:
 - 4 to 6 competencies, each linked to an outcome, with weights that add to 100 and anchors 1 to 4 written as observable behaviour;
 - which competencies have a floor (a mean under it means below bar whatever the overall score);
 - the bar (default 3.0), the panel size (default 3) and the spread flag (default 2);
-- who scores which stage.
+- who scores which stage;
+- the hiring manager who decides, and by when (`decision.owner`, `decision.role`, `decision.by`).
 
 Every loop must test all three kinds of judgment in AI use, in a work sample, not only by asking about them:
 
@@ -70,7 +75,7 @@ It blocks on: weights that do not add to 100, a missing work sample or structure
 
 ### 3. Collect score sheets
 
-If interviewers score in a form or applicant tracking system, export one row per score as CSV (`candidate, interviewer, stage, item, score, submitted_at, evidence`; see `assets/example/acme/form-export.csv`) and run:
+If interviewers score in a form or applicant tracking system, export one row per score as CSV (`candidate, interviewer, stage, item, score, submitted_at, evidence`; see `assets/example/acme/form-export.csv`). If the tool names a column differently, add `--map candidate="Candidate ID"` (one per column) rather than editing the export. Run:
 
 ```bash
 python3 scripts/run.py import-csv run/loop.json run/export.csv --debrief K-01=2026-11-20T17:00:00+00:00 --timestamps-from ats --out run/scores
@@ -84,7 +89,7 @@ What each stage asked is taken from the items scored, so a skipped question show
 python3 scripts/run.py score run/loop.json run/scores/*.json --out run/out
 ```
 
-If any guardrail fails it prints every error and writes nothing. Otherwise it writes `results.json`, `ledger.csv` and `packet.md`. Show the user the packet: each candidate's overall score, band (`meets bar`, `below bar` or `insufficient evidence`), the three AI-judgment scores, and what to discuss (interviewer spread, near the bar, under a floor, interviewer drift across the pool). Read `references/method.md` before explaining a figure.
+If any guardrail fails it prints every error and writes nothing. Otherwise it writes `packet.html` (one self-contained page in the Leader Report style), `packet.md` (its plain-text twin), `results.json` and `ledger.csv`. Every figure carries value, unit, source, window (from the first score to the debrief start) and as_of. Show the user the packet: each candidate's overall score, band (`meets bar`, `below bar` or `insufficient evidence`), the three AI-judgment scores, and what to discuss (interviewer spread, near the bar, under a floor, interviewer drift across the pool). Read `references/method.md` before explaining a figure.
 
 ### 5. Run calibration
 

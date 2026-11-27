@@ -1,20 +1,23 @@
 [project]
 name = "ai-native-hiring-loop"
-version = "0.1.0"
+version = "0.3.0"
 description = "A skill that designs a hiring loop for an AI-fluent product, design or engineering role, and combines its scores in code."
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 # Standard library only, on purpose: the scripts run inside sandboxes that cannot install packages.
 dependencies = []
 
 [tool.ruff]
 line-length = 180
-target-version = "py39"
+target-version = "py311"
+
+# Copied unchanged from the Leader Report at a pinned commit (VENDORED.json); never edited here.
+extend-exclude = ["skills/ai-native-hiring-loop/assets/vendor"]
 
 [tool.ruff.lint]
-# E, F: errors and unused names. I: import order. B: likely bugs. UP: syntax older than Python 3.9.
+# E, F: errors and unused names. I: import order. B: likely bugs. UP: old syntax.
 # SIM: needless complexity. S: security (bandit).
 select = ["E", "F", "I", "B", "UP", "SIM", "S"]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests use assert through unittest and build fixtures with assert checks.
-"evals/**" = ["S101"]
+"evals/**" = ["S101", "S603"]

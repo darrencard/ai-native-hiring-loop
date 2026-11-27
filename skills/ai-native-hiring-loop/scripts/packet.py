@@ -15,12 +15,13 @@ import csv
 import io
 import re
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from typing import Any
 
 from aggregate import DRIFT_FLAG, NEAR_BAR, fmt
 from guardrails import banned_terms
 
-LEDGER_FIELDS = ("id", "candidate", "figure", "value", "source", "method")
+LEDGER_FIELDS = ("id", "candidate", "figure", "value", "unit", "source", "window_from", "window_to", "as_of", "method")
 
 OVERCLAIMS = (
     "will succeed",
@@ -100,37 +101,101 @@ def render_kit(loop: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dict[str, str]], pool_flags: list[dict[str, str]]) -> str:
+def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dict[str, str]], pool_flags: list[dict[str, str]], guards: list[dict[str, Any]]) -> dict[str, Any]:
+    """Everything the packet prints, in one place, so the Markdown and the HTML page say the same thing.
+
+    Every number in it is a ledger value or a value from the loop design. No text here is written by a model.
+    """
     role = loop["role"]
-    lines = [f"# Calibration packet: {role['title']}, {role['level']}", ""]
-    if loop.get("illustrative"):
-        lines += ["*Illustrative. Every name, figure and score in this packet is invented.*", ""]
+    g = {r["id"].removeprefix("pool."): r for r in guards}
+    decision = loop.get("decision") or {}
+    owner = decision.get("owner", "").strip()
+    sources = sorted({r.get("timestamps_from") or "not stated" for r in results})
+    n, items = g["candidates"]["value"], g["items"]["value"]
+    who = f"{owner} ({decision['role']})" if decision.get("role") else owner
+    lede = f"{n} candidates, the same {items} items each, scored in code against the rubric before the debrief. {who} makes the hire decision."
+    candidates = []
+    for r in results:
+        floors = [f for f in r["flags"] if f["rule"] == "floor"]
+        if r["band"] == "insufficient evidence":
+            why = "At least one competency has no eligible score, so there is no overall score."
+        elif floors:
+            under = "; ".join(f["message"].split(";")[0] for f in floors)
+            if Fraction(r["overall"]) < Fraction(r["bar"]):
+                why = f"Overall {r['overall']} is under the bar of {r['bar']}, and {under}."
+            else:
+                why = f"Overall {r['overall']} clears the bar of {r['bar']}, but {under}, so the band is below bar."
+        elif r["band"] == "below bar":
+            why = f"Overall {r['overall']} is under the bar of {r['bar']}."
+        else:
+            why = f"Overall {r['overall']} against a bar of {r['bar']}, with no competency under its floor."
+        candidates.append({**r, "why": why})
+    guardrails = [
+        ("Same questions", f"{g['same_questions']['value']} of {n} candidates got all {items} items, in order. A skipped or added question blocks the packet."),
+        (
+            "Scores before discussion",
+            f"{g['counted']['value']} scores counted; {g['after_debrief']['value']} recorded at or after the debrief started. Score times from: {', '.join(sources)}.",
+        ),
+        ("Independent scoring", f"Every work-sample criterion has at least {g['work_sample_scorers']['value']} scorers who did not confer."),
+        ("No protected attributes", "Sheets carry candidate codes only. A field for a name, age, photo or school, or evidence that mentions one, blocks the packet."),
+        ("No banned criteria", "Criteria that judge the person, not the work (fit, a hunch, the right school), are blocked in the loop, in the evidence and in the decision note."),
+    ]
+    warnings = [f"{f['where']}: {f['message']}" for f in findings if f["level"] == "warning"]
+    return {
+        "title": f"Hiring loop: {role['title']}",
+        "level": role["level"],
+        "team": role["team"],
+        "version": loop.get("version", "unversioned"),
+        "illustrative": bool(loop.get("illustrative")),
+        "as_of": g["candidates"]["as_of"],
+        "lede": lede,
+        "owner": who,
+        "by": decision.get("by", ""),
+        "decision": "Hire or not, for each candidate. The band says how the evidence compares with the bar this loop set. It does not decide, and it does not predict performance.",
+        "bar": results[0]["bar"] if results else fmt(Fraction(str(loop["calibration"]["bar"]))),
+        "candidates": candidates,
+        "pool_flags": pool_flags,
+        "guardrails": guardrails,
+        "warnings": warnings,
+        "steps": loop["calibration"]["steps"],
+        "foot": "Code computed every figure from the score sheets named in the ledger; the model wrote none. A named hiring manager decides and owns the note.",
+    }
+
+
+def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dict[str, str]], pool_flags: list[dict[str, str]], guards: list[dict[str, Any]]) -> str:
+    """The plain-text twin of the HTML page."""
+    v = view(loop, results, findings, pool_flags, guards)
+    lines = [f"# {v['title']}", ""]
+    if v["illustrative"]:
+        lines += ["*Illustrative. Acme is an invented company; every candidate, interviewer, name and score here is invented.*", ""]
+    lines += [f"{v['level']}. {v['team']} Loop version {v['version']}. Debrief {v['as_of'][:10]}.", "", v["lede"], ""]
+    by = f" By {v['by']}." if v["by"] else ""
+    lines += ["## Decision", "", f"**Owner: {v['owner']}.**{by} {v['decision']}", ""]
     lines += [
-        "Every figure below was computed by `aggregate.py` and has a row in `ledger.csv`. Scores recorded after the debrief started are not counted.",
+        "## Candidates against the bar",
         "",
-        "The overall score summarises; it does not decide. Read the competency rows and the evidence first. A named hiring manager decides.",
-        "",
-        "| Candidate | Overall | Band | Evals | Cost | Restraint | Counted | Not counted | Score times from |",
+        "| Candidate | Overall | Bar | Band | Evals | Cost | Restraint | Counted | Not counted |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
-    for r in results:
-        ai = {k: v or "none" for k, v in r["ai_judgment"].items()}
-        cols = [r["candidate"], r["overall"] or "none", r["band"], ai["evals"], ai["cost"], ai["restraint"], r["eligible"], r["excluded"], r.get("timestamps_from") or "not stated"]
+    for r in v["candidates"]:
+        ai = {k: x or "none" for k, x in r["ai_judgment"].items()}
+        cols = [r["candidate"], r["overall"] or "none", r["bar"], r["band"], ai["evals"], ai["cost"], ai["restraint"], r["eligible"], r["excluded"]]
         lines.append("| " + " | ".join(str(c) for c in cols) + " |")
-    lines.append("")
-    for r in results:
-        lines += [f"## {r['candidate']}", "", "| Competency | Weight | Mean | Interviewers | Spread |", "|---|---|---|---|---|"]
+    lines += ["", "The overall score summarises; it does not decide. Read the competency rows and the evidence first.", ""]
+    for r in v["candidates"]:
+        lines += [f"## {r['candidate']}: {r['band']}", "", r["why"], "", "| Competency | Weight | Mean | Interviewers | Spread |", "|---|---|---|---|---|"]
         for c in r["competencies"]:
             lines.append(f"| {c['id']} {cell(c['name'])} | {c['weight']} | {c['mean'] or 'none'} | {c['raters']} | {c['spread'] or 'none'} |")
         lines.append("")
         if r["flags"]:
             lines += ["To discuss:", ""] + [f"- {f['message']}" for f in r["flags"]] + [""]
-    if pool_flags:
-        lines += ["## Interviewer calibration", ""] + [f"- {f['message']}" for f in pool_flags] + [""]
-    warnings = [f for f in findings if f["level"] == "warning"]
-    if warnings:
-        lines += ["## Warnings", ""] + [f"- {cell(f['where'])}: {cell(f['message'])}" for f in warnings] + [""]
-    lines += ["## Calibration steps", ""] + [f"{n}. {s}" for n, s in enumerate(loop["calibration"]["steps"], 1)] + [""]
+    if v["pool_flags"]:
+        lines += ["## Interviewer calibration", ""] + [f"- {f['message']}" for f in v["pool_flags"]] + [""]
+    lines += ["## Fairness guardrails", ""] + [f"- **{k}.** {t}" for k, t in v["guardrails"]] + [""]
+    if v["warnings"]:
+        lines += ["## Warnings", ""] + [f"- {cell(w)}" for w in v["warnings"]] + [""]
+    lines += ["## Calibration steps", ""] + [f"{n}. {s}" for n, s in enumerate(v["steps"], 1)] + [""]
+    lines += [v["foot"], ""]
     return "\n".join(lines)
 
 
@@ -139,7 +204,8 @@ def ledger_csv(rows: list[dict[str, str]]) -> str:
     w = csv.DictWriter(buf, fieldnames=LEDGER_FIELDS, lineterminator="\n")
     w.writeheader()
     for r in rows:
-        w.writerow({k: r[k] for k in LEDGER_FIELDS})
+        flat = {**r, "window_from": r["window"]["from"], "window_to": r["window"]["to"]}
+        w.writerow({k: flat[k] for k in LEDGER_FIELDS})
     return buf.getvalue()
 
 
@@ -160,6 +226,11 @@ def _allowed_numbers(loop: dict[str, Any], ledger: list[dict[str, str]]) -> set[
     texts |= {str(c["floor"]) for c in loop["competencies"] if "floor" in c}
     texts |= {str(s["minutes"]) for s in loop["stages"]}
     texts |= {fmt(NEAR_BAR), fmt(DRIFT_FLAG)}  # the method's own thresholds
+    # The role description, the loop version, the decision date and each figure's window and as_of are design
+    # and record facts, not scores; a note may repeat them.
+    facts = [loop["role"].get(k, "") for k in ("title", "level", "team")] + [str(loop.get("version", "")), str((loop.get("decision") or {}).get("by", ""))]
+    facts += [t for r in ledger for t in (r.get("as_of", ""), (r.get("window") or {}).get("from", ""), (r.get("window") or {}).get("to", ""))]
+    texts |= {n for f in facts for n in NUMBER.findall(IDENT.sub(" ", f))}
     out = {_num(t) for t in texts}
     # A negative drift may be written without its sign ("0.33 below the panel").
     out |= {abs(v) for v in out if v is not None}

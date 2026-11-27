@@ -11,7 +11,7 @@ Fairness and evidence rules live in guardrails.py. Standard library only.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +24,10 @@ AI_JUDGMENT_KINDS = ("evals", "cost", "restraint")
 # Where score timestamps came from. Only a system clock (an applicant tracking system or a
 # form tool) shows that a score was recorded before the debrief; a typed time is a claim.
 TIMESTAMP_SOURCES = ("ats", "form", "self-reported")
+# A sheet holds codes, scores, times and evidence only. Any other field is refused, so a name,
+# an age, a photo or a school cannot ride along into the packet.
+SHEET_KEYS = ("candidate", "illustrative", "timestamps_from", "loop_version", "debrief_started_at", "asked", "scores")
+SCORE_KEYS = ("interviewer", "stage", "item", "score", "submitted_at", "evidence")
 
 
 class SchemaError(ValueError):
@@ -50,6 +54,20 @@ def parse_time(value: Any) -> datetime | None:
     except ValueError:
         return None
     return t if t.tzinfo is not None else None
+
+
+def utc(value: Any) -> str | None:
+    """The same instant as an ISO 8601 string in UTC, so every window prints one way."""
+    t = parse_time(value)
+    return t.astimezone(UTC).isoformat() if t else None
+
+
+def _is_date(value: str) -> bool:
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return len(value) == 10
 
 
 def _req(obj: dict[str, Any], key: str, kind: type | tuple[type, ...], where: str, problems: list[str]) -> Any:
@@ -171,6 +189,18 @@ def check_loop_shape(loop: dict[str, Any]) -> list[str]:
                 ai = it.get("ai_judgment")
                 if ai is not None and ai not in AI_JUDGMENT_KINDS:
                     problems.append(f"{iw}.ai_judgment: must be one of {list(AI_JUDGMENT_KINDS)} or absent")
+
+    decision = loop.get("decision")
+    if decision is not None:
+        if not isinstance(decision, dict):
+            problems.append("loop.decision: must be an object with the hiring manager as owner")
+        else:
+            for key in ("owner", "role"):
+                if decision.get(key) is not None and not isinstance(decision.get(key), str):
+                    problems.append(f"decision.{key}: must be text (owner is the hiring manager's name)")
+            by = decision.get("by")
+            if by is not None and (not isinstance(by, str) or not _is_date(by)):
+                problems.append("decision.by: must be a date, YYYY-MM-DD")
 
     cal = _req(loop, "calibration", dict, "loop", problems)
     if cal is not None:

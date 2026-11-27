@@ -1,7 +1,8 @@
 """Turn a form or applicant-tracking-system export (CSV, one row per score) into score sheets.
 
-Columns (header row required, extra columns ignored):
+Columns (header row required, extra columns ignored and never read):
   candidate, interviewer, stage, item, score, submitted_at, evidence
+If your tool names a column differently, map it (--map candidate="Candidate ID") rather than editing the export.
 
 What each stage "asked" is taken from the items scored for that candidate. So a skipped
 question is missing from the sheet and the same-questions guardrail blocks it; nothing is
@@ -19,15 +20,21 @@ from schema import TIMESTAMP_SOURCES, SchemaError, parse_time
 COLUMNS = ("candidate", "interviewer", "stage", "item", "score", "submitted_at", "evidence")
 
 
-def read_rows(path: str | Path) -> list[dict[str, str]]:
+def read_rows(path: str | Path, mapping: dict[str, str] | None = None) -> list[dict[str, str]]:
+    """Read the export. mapping says which of the file's columns holds each of ours, for example {"candidate": "Candidate ID"}."""
     p = Path(path)
+    mapping = {k.strip().lower(): v.strip().lower() for k, v in (mapping or {}).items()}
+    unknown = sorted(set(mapping) - set(COLUMNS))
+    if unknown:
+        raise SchemaError(f"--map names {unknown}; the columns are {list(COLUMNS)}")
+    theirs = {v: k for k, v in mapping.items()}
     try:
         with p.open(newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
-            header = [h.strip().lower() for h in reader.fieldnames or []]
+            header = [theirs.get(h.strip().lower(), h.strip().lower()) for h in reader.fieldnames or []]
             missing = [c for c in COLUMNS if c not in header]
             if missing:
-                raise SchemaError(f"{p}: missing columns {missing}")
+                raise SchemaError(f"{p}: missing columns {missing}; map yours with --map {missing[0]}=YOUR_COLUMN")
             reader.fieldnames = header
             return [{k: (v or "").strip() for k, v in row.items() if k in COLUMNS} for row in reader]
     except (OSError, UnicodeDecodeError, csv.Error) as exc:

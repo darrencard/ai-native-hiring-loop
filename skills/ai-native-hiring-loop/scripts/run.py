@@ -5,7 +5,7 @@
   python3 scripts/run.py new --role pm|designer|engineer --out LOOP.json
   python3 scripts/run.py check-design LOOP.json [--kit OUT.md]
   python3 scripts/run.py blank LOOP.json --candidate ID --out SHEET.json
-  python3 scripts/run.py import-csv LOOP.json EXPORT.csv --debrief ID=TIME [...] --timestamps-from ats|form|self-reported --out DIR
+  python3 scripts/run.py import-csv LOOP.json EXPORT.csv --debrief ID=TIME [...] --timestamps-from ats|form|self-reported [--map OURS=THEIRS ...] --out DIR
   python3 scripts/run.py score LOOP.json SHEET.json [SHEET.json ...] --out DIR
   python3 scripts/run.py check-note DIR/results.json NOTE.md
 
@@ -14,12 +14,12 @@ new copies a starter loop for a role family; edit it, then run check-design.
 blank writes an empty score sheet for one candidate, with every item listed.
 import-csv turns a form or tracker export (one row per score) into one sheet per candidate.
 check-design validates the loop and, if it passes, writes the interview kit.
-score runs every guardrail, combines the scores and writes results.json, ledger.csv
-and packet.md to DIR. Any guardrail error stops it before anything is written.
+score runs every guardrail, combines the scores and writes results.json, ledger.csv,
+packet.md and packet.html (one self-contained page in the Leader Report style) to DIR. Any guardrail error stops it before anything is written.
 check-note blocks a debrief note with an uncomputed figure, a wrong band or an overclaim.
 
 Exit codes: 0 passed, 1 a guardrail or check failed, 2 a file could not be read.
-Standard library only. Python 3.9 or later. No network calls.
+Standard library only. Python 3.11 or later. No network calls.
 """
 
 from __future__ import annotations
@@ -30,12 +30,16 @@ import shutil
 import sys
 from pathlib import Path
 
+if sys.version_info < (3, 11):  # noqa: UP036  (stop with a plain message, not an import error, on the macOS system Python)
+    sys.exit("ai-native-hiring-loop needs Python 3.11 or later; this is " + sys.version.split()[0])
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from aggregate import interviewer_drift, score_candidate  # noqa: E402
-from guardrails import check_design, check_pool, check_sheet, errors  # noqa: E402
-from importer import read_rows, to_sheets
+from aggregate import guardrail_figures, interviewer_drift, score_candidate  # noqa: E402
+from guardrails import check_design, check_pool, check_sheet, decision_owner, errors, finding  # noqa: E402
+from importer import read_rows, to_sheets  # noqa: E402
 from packet import check_note, ledger_csv, render_kit, render_packet  # noqa: E402
+from render_html import page  # noqa: E402
 from schema import SchemaError, check_loop_shape, check_scores_shape, load_json, stage_items  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
@@ -84,12 +88,16 @@ def build(loop: dict, sheet_paths: list[str]) -> dict:
     for sheet, _ in sheets:
         findings += check_sheet(loop, sheet)
     findings += check_pool(loop, [s for s, _ in sheets])
+    if not decision_owner(loop):
+        findings = [f for f in findings if f["rule"] != "decision-owner"]
+        findings.append(finding("decision-owner", "error", "decision", "name the hiring manager in decision.owner; the packet says who decides"))
     if errors(findings):
         return {"findings": findings, "blocked": True}
     results = [score_candidate(loop, s, name) for s, name in sheets]
     pool_flags, pool_ledger = interviewer_drift(loop, sheets)
-    ledger = [row for r in results for row in r["ledger"]] + pool_ledger
-    return {"findings": findings, "blocked": False, "results": results, "pool_flags": pool_flags, "ledger": ledger}
+    guards = guardrail_figures(loop, sheets)
+    ledger = [row for r in results for row in r["ledger"]] + pool_ledger + guards
+    return {"findings": findings, "blocked": False, "results": results, "pool_flags": pool_flags, "ledger": ledger, "guardrails": guards}
 
 
 def cmd_score(args: argparse.Namespace) -> int:
@@ -109,10 +117,12 @@ def cmd_score(args: argparse.Namespace) -> int:
     }
     (d / "results.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (d / "ledger.csv").write_text(ledger_csv(out["ledger"]), encoding="utf-8")
-    (d / "packet.md").write_text(render_packet(loop, out["results"], out["findings"], out["pool_flags"]), encoding="utf-8")
+    (d / "packet.md").write_text(render_packet(loop, out["results"], out["findings"], out["pool_flags"], out["guardrails"]), encoding="utf-8")
+    html = page(loop, out["results"], out["findings"], out["pool_flags"], out["ledger"], out["guardrails"])
+    (d / "packet.html").write_text(html, encoding="utf-8")
     for r in out["results"]:
         print(f"{r['candidate']}: overall {r['overall'] or 'none'}, {r['band']}, {len(r['flags'])} item(s) to discuss")
-    print(f"Wrote {d / 'results.json'}, {d / 'ledger.csv'} and {d / 'packet.md'}")
+    print(f"Wrote {d / 'results.json'}, {d / 'ledger.csv'}, {d / 'packet.md'} and {d / 'packet.html'}")
     return 0
 
 
@@ -148,7 +158,7 @@ def cmd_new(args: argparse.Namespace) -> int:
         return 2
     out.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(ASSETS / "starters" / f"{args.role}.json", out)
-    print(f"Wrote {out}. Replace the outcomes with your own, adjust weights and anchors, then run check-design.")
+    print(f"Wrote {out}. Replace the outcomes with your own, name the hiring manager in decision.owner, adjust weights and anchors, then run check-design.")
     return 0
 
 
@@ -186,7 +196,13 @@ def cmd_import_csv(args: argparse.Namespace) -> int:
         if not sep:
             raise SchemaError(f"--debrief {pair!r}: use CANDIDATE=TIME")
         debriefs[cand.strip()] = when.strip()
-    sheets = to_sheets(loop, read_rows(args.csv), debriefs, args.timestamps_from)
+    mapping = {}
+    for pair in args.map:
+        ours, sep, theirs = pair.partition("=")
+        if not sep:
+            raise SchemaError(f"--map {pair!r}: use OUR_COLUMN=YOUR_COLUMN, for example candidate=Candidate ID")
+        mapping[ours.strip()] = theirs.strip()
+    sheets = to_sheets(loop, read_rows(args.csv, mapping), debriefs, args.timestamps_from)
     d = Path(args.out)
     d.mkdir(parents=True, exist_ok=True)
     for sheet in sheets:
@@ -218,6 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("csv")
     i.add_argument("--debrief", action="append", default=[], help="CANDIDATE=ISO time the debrief started; repeat per candidate")
     i.add_argument("--timestamps-from", required=True, choices=("ats", "form", "self-reported"))
+    i.add_argument("--map", action="append", default=[], help="OUR_COLUMN=YOUR_COLUMN when the export names a column differently; repeat per column")
     i.add_argument("--out", required=True)
     i.set_defaults(fn=cmd_import_csv)
     a = sub.add_parser("check-design", help="validate a loop design and write the interview kit")

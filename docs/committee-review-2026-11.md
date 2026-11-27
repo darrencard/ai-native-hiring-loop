@@ -33,8 +33,23 @@ Round 2 gaps, fixed before round 3:
 - Interviewers score in forms, not JSON (Doshi, VP Engineering). Added `run.py import-csv` for a form or tracker export. What a stage asked comes from what was scored, so a skipped question still blocks.
 - `run.py blank` writes an empty sheet with every item listed, for teams without a form.
 
-## Where it stalled
+## What held a score under 10
 
 - **Cutler, Rigour 9.** With two scorers on a stage, interviewer drift shows on both and cannot say who is off. Needs 3 or more scorers per stage, which is a cost choice for the team, not a code fix.
 - **Rachitsky, Use 9.** No real hiring loop has run through it yet; every result is on the invented Acme example. Only live use fixes this.
 - **VP Engineering, Use 9.** No direct reader for a specific applicant tracking system; CSV export only. A reader per system is v0.2 work.
+
+## Round 4, v0.3.0 (2026-11-26)
+
+Readers: Product Ops Committee, a VP Engineering, PLG Committee (Bush, Verna, Tharin), Design Committee, Guillermo Rauch, Karri Saarinen. Role-played, not endorsements.
+
+| Reader | Score | What held it under 10 |
+|---|---|---|
+| Product Ops Committee | 9 | Not yet used by a real team |
+| VP Engineering | 9 | Not yet used by a real team; no direct reader for a specific applicant tracking system (CSV export with `--map` only) |
+| PLG Committee | 9 | Not yet used by a real team. One command shows the sample page in under a second |
+| Design Committee | 10 | |
+| Guillermo Rauch | 10 | |
+| Karri Saarinen | 10 | |
+
+Fixed in this round: the HTML page in the Leader Report style with brass only for the hiring manager's call; unit, window and as_of on every figure; fairness checks printed as counted figures; candidate codes and protected attributes enforced; a named hiring manager required to score; `--map` for exports; a byte-for-byte sample test.

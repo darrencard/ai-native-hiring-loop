@@ -50,7 +50,11 @@ With two scorers on a stage, drift shows on both. The flag says whose anchors to
 
 ## Ledger
 
-Every figure has a row in `ledger.csv`: an ID (`K-01.C2.mean`), the figure, the printed value, the source rows (`K-01.json#scores[4]`) and the method. `check-note` allows a number in a note only if it equals a ledger value, a design value (weight, floor, bar, minutes) or a method threshold.
+Every figure has a row in `ledger.csv`: an ID (`K-01.C2.mean`), the figure, the printed value, its unit, the source rows (`K-01.json#scores[4]`), the window it covers (from the candidate's first recorded score to the moment the debrief started), as_of (the debrief start) and the method. Pool figures (interviewer drift and the fairness counts) cover the whole pool: from the first score to the last debrief start. `check-note` allows a number in a note only if it equals a ledger value, a design value (weight, floor, bar, minutes), a fact from the role description, version, decision date or a figure's window, or a method threshold.
+
+## Fairness counts
+
+The packet only exists if every guardrail passed. It still prints what was checked, as counts with ledger rows: candidates in the pool, items every candidate must get, candidates asked exactly those items, scores counted, scores recorded at or after the debrief started, and the fewest independent scorers on any work-sample criterion.
 
 ## Timestamps
 

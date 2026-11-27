@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from schema import AI_JUDGMENT_KINDS, item_index, min_scorers, parse_time, stage_items
+from schema import AI_JUDGMENT_KINDS, SCORE_KEYS, SHEET_KEYS, item_index, min_scorers, parse_time, stage_items
 
 WEIGHT_TOTAL = 100
 MIN_EVIDENCE_CHARS = 20
@@ -40,6 +40,42 @@ BANNED_CRITERIA = (
 )
 
 
+# Phrases that point at a protected attribute rather than the work. A score whose evidence
+# uses one blocks the packet until the interviewer rewrites the evidence about the work.
+PROTECTED_TERMS = (
+    "years old",
+    "too old",
+    "too young",
+    "his age",
+    "her age",
+    "their age",
+    "date of birth",
+    "pregnant",
+    "pregnancy",
+    "maternity",
+    "paternity",
+    "married",
+    "marital",
+    "has children",
+    "has kids",
+    "religion",
+    "religious",
+    "ethnicity",
+    "racial",
+    "nationality",
+    "national origin",
+    "his accent",
+    "her accent",
+    "their accent",
+    "disability",
+    "sexual orientation",
+    "gender",
+)
+# Fields a sheet may never carry. Named here so the refusal says why.
+PROTECTED_FIELDS = ("name", "full_name", "email", "age", "date_of_birth", "dob", "gender", "photo", "school", "university", "nationality", "address", "phone", "linkedin")
+# A candidate is a code such as K-01, never a name.
+CANDIDATE_CODE = re.compile(r"^[A-Za-z]{1,4}-?\d{1,6}$")
+
 PLACEHOLDER = re.compile(r"<[^<>]+>")
 
 
@@ -50,6 +86,21 @@ def finding(rule: str, level: str, where: str, message: str) -> dict[str, str]:
 def banned_terms(text: str) -> list[str]:
     low = text.lower()
     return [t for t in BANNED_CRITERIA if re.search(r"\b" + re.escape(t) + r"\b", low)]
+
+
+def protected_terms(text: str) -> list[str]:
+    low = text.lower()
+    return [t for t in PROTECTED_TERMS if re.search(r"\b" + re.escape(t) + r"\b", low)]
+
+
+def _field_finding(key: str, where: str) -> dict[str, str]:
+    if key.lower() in PROTECTED_FIELDS:
+        return finding("protected-attribute", "error", where, f"field '{key}' is personal data the loop must not see; remove it and use the candidate code")
+    return finding("unexpected-field", "error", where, f"field '{key}' is not part of a score sheet; a sheet holds codes, scores, times and evidence only")
+
+
+def decision_owner(loop: dict[str, Any]) -> str:
+    return ((loop.get("decision") or {}).get("owner") or "").strip()
 
 
 def _texts(loop: dict[str, Any]) -> list[tuple[str, str]]:
@@ -127,6 +178,9 @@ def check_design(loop: dict[str, Any]) -> list[dict[str, str]]:
         for term in banned_terms(text or ""):
             out.append(finding("banned-criterion", "error", where, f"'{term}' is not a job criterion; replace it with observable behaviour"))
 
+    if not decision_owner(loop):
+        out.append(finding("decision-owner", "warning", "decision", "name the hiring manager in decision.owner; a packet cannot be scored until a named person owns the decision"))
+
     for s in stages:
         if s.get("kind") == "structured_interview" and not s.get("questions"):
             out.append(finding("needs-questions", "error", f"stage {s['id']}", "a structured interview needs written questions"))
@@ -182,6 +236,11 @@ def check_sheet(loop: dict[str, Any], sheet: dict[str, Any]) -> list[dict[str, s
     required = stage_items(loop)
     asked = sheet.get("asked") or {}
 
+    for key in sorted(set(sheet) - set(SHEET_KEYS)):
+        out.append(_field_finding(key, cand))
+    if not CANDIDATE_CODE.match(str(sheet.get("candidate", ""))):
+        out.append(finding("candidate-code", "error", cand, "use a candidate code such as K-01, not a name; the packet never carries a name"))
+
     if sheet.get("loop_version") != loop.get("version"):
         out.append(
             finding(
@@ -210,6 +269,15 @@ def check_sheet(loop: dict[str, Any], sheet: dict[str, Any]) -> list[dict[str, s
     seen: set[tuple[str, str]] = set()
     for pos, r in enumerate(sheet.get("scores", [])):
         where = f"{cand} scores[{pos}]"
+        for key in sorted(set(r) - set(SCORE_KEYS)):
+            out.append(_field_finding(key, where))
+        evidence = r.get("evidence") or ""
+        for term in protected_terms(evidence):
+            out.append(
+                finding("protected-attribute", "error", where, f"evidence mentions '{term}'; score the work, not the person. Rewrite the evidence about what the candidate did")
+            )
+        for term in banned_terms(evidence):
+            out.append(finding("banned-criterion", "error", where, f"evidence uses '{term}', which is not a job criterion"))
         item = r.get("item")
         info = index.get(item)
         if info is None:

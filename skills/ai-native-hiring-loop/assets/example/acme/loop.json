@@ -6,6 +6,11 @@
     "level": "Senior (L6)",
     "team": "Acme Assist squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative."
   },
+  "decision": {
+    "owner": "Jordan Vale",
+    "role": "Head of Product",
+    "by": "2026-11-23"
+  },
   "outcomes": [
     {
       "id": "O1",
@@ -30,7 +35,7 @@
     {
       "id": "C1",
       "name": "Outcome framing",
-      "description": "Turns a request into a problem, a definition of good, non-goals and a line that says whether it landed.",
+      "description": "Turns a request into a problem, a definition of good, non-goals and a line that says whether it worked.",
       "weight": 25,
       "outcomes": [
         "O1",
@@ -281,7 +286,7 @@
     "steps": [
       "Each interviewer records every score, with written evidence, before the debrief starts. Scores recorded after it starts do not count.",
       "Interviewers do not see each other's scores or discuss the candidate until the debrief starts.",
-      "The facilitator runs `run.py score` and shares the packet. Nobody states a view first.",
+      "The facilitator runs run.py score and shares the packet. Nobody states a view first.",
       "For each flagged competency, the interviewers read their evidence aloud, lowest score first, and compare it with the anchors.",
       "Scores do not change in the debrief. If an interviewer finds they misread an anchor, the decision note says so.",
       "The hiring manager decides against the band and the evidence, and writes the decision note; check-note checks it before it is sent."

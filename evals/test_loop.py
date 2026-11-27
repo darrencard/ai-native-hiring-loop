@@ -360,19 +360,19 @@ class Ledger(unittest.TestCase):
         for row in self.out["ledger"]:
             self.assertTrue(row["source"] and row["method"], row["id"])
             for ref in row["source"].split("; "):
-                self.assertRegex(ref, r"^K-0\d\.json#scores\[\d+\]$|^no eligible score$")
+                self.assertRegex(ref, r"^K-0\d\.json(#scores\[\d+\]|: no eligible score)?$")
 
     def test_ids_are_unique(self):
         ids = [r["id"] for r in self.out["ledger"]]
         self.assertEqual(len(ids), len(set(ids)))
 
     def test_every_number_in_the_packet_is_in_the_ledger_or_the_design(self):
-        text = packet.render_packet(self.loop, self.out["results"], self.out["findings"], self.out["pool_flags"])
+        text = packet.render_packet(self.loop, self.out["results"], self.out["findings"], self.out["pool_flags"], self.out["guardrails"])
         self.assertEqual(packet.check_note(text, self.loop, self.out["results"], self.out["ledger"]), [])
 
     def test_sources_point_at_real_rows(self):
         for row in self.out["ledger"]:
-            if row["candidate"] == "pool" or row["source"] == "no eligible score":
+            if row["candidate"] == "pool" or row["source"].endswith("no eligible score"):
                 continue
             s = sheet(row["candidate"])
             for ref in row["source"].split("; "):
@@ -418,10 +418,12 @@ class Note(unittest.TestCase):
 
 
 class Starters(unittest.TestCase):
-    def test_every_starter_passes_design_with_no_warnings(self):
+    def test_every_starter_passes_design_and_asks_only_for_the_hiring_manager(self):
         for role in run.ROLES:
             lp = schema.load_json(SCRIPTS.parent / "assets" / "starters" / f"{role}.json")
             self.assertEqual(schema.check_loop_shape(lp), [], role)
+            self.assertEqual([f["rule"] for f in guardrails.check_design(lp)], ["decision-owner"], role)
+            lp["decision"] = {"owner": "Sam Example"}
             self.assertEqual(guardrails.check_design(lp), [], role)
             self.assertTrue(lp["starter"], role)
 
