@@ -100,4 +100,4 @@ python3 -m unittest discover -s evals -v
 
 MIT. See [LICENSE](LICENSE). Version 0.3.0. Made by [Dacard](https://www.dacard.ai).
 
-Claude is a trademark of Anthropic, PBC. This skill is made by Dacard, not by Anthropic.
+Claude and Claude Code are trademarks of Anthropic, PBC. These skills are independent and not affiliated with or endorsed by Anthropic.
