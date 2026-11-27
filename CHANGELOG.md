@@ -8,6 +8,7 @@
 - `check-note` reads "meets the target", "below the target" and "under the target" as band claims, like the bar forms.
 - Tests: the picture draws only printed figures, one block per candidate, a floor mark per floored skill area, brass only for the decider, no status colour, an aria-label that states the answer, plain words in public copy, and the svgkit pin.
 - Design fix round 2: the heading reads "One of three candidates, K-01, meets the hiring target." (the target's figure stays in the picture and its aria-label; a candidate id never breaks at its hyphen); no text below 11px at any width (the page raises the vendored template's and svgkit's smaller sizes as it inlines them; the files on disk are unchanged); the header prints the plain name, AI-native hiring loop, and the code name moves to the engineers' fold; public copy drops record, bet, the bar, PRD, ARR and tokens, and the interview kit says Target and prints the debrief steps in the packet's plain words. `check-note` reads "meets the hiring target" as the meets verdict.
+- On phones up to 440px the picture's panel gives it its full 340px, so its 11px labels render at 11px at 390 and 375 wide.
 
 ## 0.3.0, 2026-11-26
 
