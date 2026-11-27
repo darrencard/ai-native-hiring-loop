@@ -237,8 +237,8 @@ class Versions(unittest.TestCase):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
         skill = re.search(r'version: "([^"]+)"', (SKILL / "SKILL.md").read_text(encoding="utf-8")).group(1)
-        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.2"})
-        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.2, 2026-11-27"))
+        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.3"})
+        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.3, 2026-11-27"))
 
     def test_vendored_files_match_their_pins(self):
         pins = json.loads((SKILL / "VENDORED.json").read_text(encoding="utf-8"))

@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "vendor"))
 import svgkit as sk  # noqa: E402  (vendored, unchanged; see VENDORED.json)
 from packet import view  # noqa: E402
 
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "vendor" / "template.html"
 STYLE = re.compile(r"<style>(.*?)</style>", re.S)
 
@@ -56,7 +56,7 @@ PAGE_CSS = """
 main.solo{margin-left:0}
 .solo .slide{min-height:0}
 .solo .slide.cover{min-height:0;padding-top:40px;padding-bottom:48px;justify-content:flex-start}
-.solo h1{font-size:clamp(34px,4.6vw,60px);line-height:1;letter-spacing:-.04em;max-width:20ch;margin-bottom:20px}
+.solo h1{font-size:clamp(34px,4.6vw,60px);line-height:1;letter-spacing:-.04em;text-wrap:balance;margin-bottom:20px}
 .solo .lede{margin-bottom:24px}
 .status{display:inline-block;font:400 12px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--t1);white-space:nowrap}
 .verdict{margin:0 0 20px;display:flex;flex-wrap:wrap;gap:8px 28px}
@@ -77,7 +77,7 @@ main.solo{margin-left:0}
 .disc li span,.fair li span{display:block;font:400 11px/18px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .solo details{margin-top:4px}
 .solo details>*:not(summary){margin-top:12px}
-.solo details p,.solo details li{margin:0 0 10px;font-size:13px;color:var(--t2);max-width:80ch}
+.solo details p,.solo details li{margin:0 0 10px;font-size:13px;color:var(--t2)}
 .solo details ul,.solo details ol{padding-left:18px}
 .solo details h3{margin:22px 0 6px}
 .tablewrap td,.tablewrap th{overflow-wrap:anywhere}
@@ -89,6 +89,9 @@ main.solo{margin-left:0}
 .stack table,.stack tbody,.stack tr,.stack td{display:block}.stack tr:first-child{display:none}.stack tr{padding:10px 16px;border-bottom:1px solid var(--line)}
 .stack td{border:0;padding:3px 0;display:grid;grid-template-columns:118px 1fr;gap:12px}.stack td.num{text-align:left;white-space:normal}
 .stack td::before{content:attr(data-l);font:400 11px/20px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}}
+/* Full column (site rule since 2026-11-25): every title and text block runs the content column, the scorecard frame's width. */
+.solo h1,.solo h2,.solo h3,.solo .lede,.solo .next,.solo p,.solo li,.solo .sk figcaption{max-width:none}
+.solo h1{text-wrap:balance}.solo .lede,.solo p,.solo li,.solo .sk figcaption{text-wrap:pretty}
 """
 
 

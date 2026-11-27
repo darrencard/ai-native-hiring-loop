@@ -1,6 +1,6 @@
 [project]
 name = "ai-native-hiring-loop"
-version = "0.3.2"
+version = "0.3.3"
 description = "A skill that designs a hiring loop for an AI-fluent product, design or engineering role, and combines its scores in code."
 requires-python = ">=3.11"
 # Standard library only, on purpose: the scripts run inside sandboxes that cannot install packages.

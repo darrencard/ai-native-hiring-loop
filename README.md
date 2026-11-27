@@ -99,6 +99,6 @@ python3 -m unittest discover -s evals -v
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Version 0.3.2. Made by [Dacard](https://www.dacard.ai).
+MIT. See [LICENSE](LICENSE). Version 0.3.3. Made by [Dacard](https://www.dacard.ai).
 
 Claude and Claude Code are trademarks of Anthropic, PBC. These skills are independent and not affiliated with or endorsed by Anthropic.

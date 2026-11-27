@@ -4,7 +4,7 @@ description: Designs a structured hiring loop for an AI-fluent product, design o
 license: MIT. See LICENSE in the repository root.
 metadata:
   author: Dacard
-  version: "0.3.2"
+  version: "0.3.3"
 ---
 
 # AI-native hiring loop

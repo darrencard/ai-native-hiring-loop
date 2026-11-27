@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3, 2026-11-27
+
+- Full column: the heading, the intro, the next step, section text and captions run the full width of the content column, the same width as the scorecard frame (the site's rule since 2026-11-25). The page's own CSS drops its caps on text (the heading's 20ch and the folds' 80ch) and overrides the vendored template's 62ch intro and svgkit's 76ch caption after their rules, so neither hash-pinned file changes. The heading balances its lines; text breaks with `text-wrap: pretty`. A test checks the page CSS caps no text and the sample carries the override.
+
 ## 0.3.2, 2026-11-27
 
 - The picture is scorecard rows in the grammar of the outcome scorecard on dacard.ai/update (svgkit 1.2.0, landing-loop 78784ef): one row per candidate, the overall score against the target as a range line on one scale for the frame (every target tick lines up), the figure line with any skill area under its floor kept on it (`3.23 · TARGET 3.00 · RESTRAINT 1.75 < FLOOR 2.50`), MEETS TARGET muted or BELOW TARGET in ink, and the hiring manager in brass once in the frame head. Geist Mono 12px for labels and figures, Geist 14px for names, no text inside a picture, no box inside the frame. The candidate blocks, their panel and the boxed verdict chips are gone; verdicts print as text.
