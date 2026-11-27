@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2, 2026-11-27
+
+- The picture is scorecard rows in the grammar of the outcome scorecard on dacard.ai/update (svgkit 1.2.0, landing-loop 78784ef): one row per candidate, the overall score against the target as a range line on one scale for the frame (every target tick lines up), the figure line with any skill area under its floor kept on it (`3.23 · TARGET 3.00 · RESTRAINT 1.75 < FLOOR 2.50`), MEETS TARGET muted or BELOW TARGET in ink, and the hiring manager in brass once in the frame head. Geist Mono 12px for labels and figures, Geist 14px for names, no text inside a picture, no box inside the frame. The candidate blocks, their panel and the boxed verdict chips are gone; verdicts print as text.
+- README and SKILL.md in plain words: project, target, the project file. Stored values (`meets bar`, `bar`), keys, file names and flags are unchanged. SKILL.md uses the user's own word if they say bet.
+- Tests from the rollout recipe: no text inside an SVG, no scaled SVG, labels 12px and names 14px, no box inside the frame, no legacy svgkit primitive (rendered with DeprecationWarning as an error), one frame with one row per candidate and each figure line exact, one scale so every target tick lines up, brass only in the frame head, and the aria-label states the answer.
+
 ## 0.3.1, 2026-11-27
 
 - The packet page follows the Landing Loop sample anatomy: the shared header (mark, DACARD, skill, date, version, blue Illustrative tag), the answer as the heading ("One of three candidates, K-01, meets the hiring target."), a verdict chip per candidate, the signature picture, one next step with the hiring manager in brass and the decision date, then each candidate's reason beside what to discuss first and the fairness checks. Each candidate in full, how the debrief runs, every figure with its source, and "For your engineers" (stored verdicts, commands, exit codes, project file key) are folded.

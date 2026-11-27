@@ -10,9 +10,9 @@ A free Claude skill that designs a structured hiring loop for an AI-fluent produ
 
 **Why it matters:** anyone can say they use AI. This loop tests, in a work sample, whether a candidate writes evals, weighs cost per task and knows when not to use a model. Every candidate gets the same questions, and every score is recorded before anyone talks.
 
-**Who decides:** a named hiring manager. Code sets each candidate's band (meets bar, below bar or insufficient evidence) against the bar the loop set. It never says hire.
+**Who decides:** a named hiring manager. Code sets each candidate's band (`meets bar`, `below bar` or `insufficient evidence`, printed as meets the target, below the target or not enough evidence) against the target the loop set. It never says hire.
 
-**How it relates to the Landing Loop:** it sits beside the loop, not in it. It hires the people who run the bets.
+**How it relates to the Landing Loop:** it sits beside the loop, not in it. It hires the people who run the projects.
 
 ## Try it on Acme
 
@@ -24,13 +24,13 @@ python3 examples/acme/sample.py
 
 It renders [examples/acme/ai-native-hiring-loop.html](examples/acme/ai-native-hiring-loop.html) (one self-contained page in the Product & Technology Leader Report style and the Landing Loop's visual family), its Markdown twin, the interview kit and the evidence ledger, in under a second. A test checks the command reproduces the committed files byte for byte.
 
-| Candidate | Overall | Bar | Band | Evals | Cost | Restraint |
+| Candidate | Overall | Target | Verdict | Evals | Cost | Restraint |
 |---|---|---|---|---|---|---|
-| K-01 | 3.33 | 3.00 | meets bar | 3.50 | 3.00 | 4.00 |
-| K-02 | 3.23 | 3.00 | below bar | 4.00 | 3.00 | 1.50 |
-| K-03 | 2.75 | 3.00 | below bar | 2.00 | 3.00 | 3.00 |
+| K-01 | 3.33 | 3.00 | meets the target | 3.50 | 3.00 | 4.00 |
+| K-02 | 3.23 | 3.00 | below the target | 4.00 | 3.00 | 1.50 |
+| K-03 | 2.75 | 3.00 | below the target | 2.00 | 3.00 | 3.00 |
 
-K-02 clears the overall bar but is below bar: restraint sits under its floor. K-03's interviewers differ by 2 points on eval design, so the packet puts that first in the debrief. The Head of Product, Quoting squad, decides by 2026-11-23. The page opens with the answer, each candidate's verdict and a picture of every candidate against the target, each skill area against its floor and the hiring manager in brass, then that decision; the detail folds away. It prints the bands in plain words: meets the target, below the target, not enough evidence.
+K-02 clears the overall target but is below the target: restraint sits under its floor. K-03's interviewers differ by 2 points on eval design, so the packet puts that first in the debrief. The Head of Product, Quoting squad, decides by 2026-11-23. The page opens with the answer, each candidate's verdict and one scorecard row per candidate (the overall score against the target on one scale, any skill area under its floor on the figure line, the hiring manager in brass in the frame head), then that decision; the detail folds away. It prints the bands in plain words: meets the target, below the target, not enough evidence.
 
 ## Install
 
@@ -62,9 +62,9 @@ Any one of these blocks the packet: a skipped or added question; a score recorde
 
 Live first means the export from the tool that holds the system clock: your applicant tracking system or form tool. No Product & Technology Leader Report collector reads interview scores, so the CSV export is the input. The report's template is vendored at a pinned commit for the page style.
 
-## Record key
+## Key in the project file
 
-None. This is a team-level skill, outside the bet loop: it reads the team's hiring loop, not a bet, and writes no key in any `landing/<bet>.json`. Each figure in `results.json` has the same shape the loop uses. `value` is a number (null when there is no eligible score); `display` is how the packet prints it:
+None. This is a team-level skill, outside the Landing Loop: it reads the team's hiring loop, not a project, and writes no key in any `landing/<bet>.json`. Each figure in `results.json` has the same shape the loop uses. `value` is a number (null when there is no eligible score); `display` is how the packet prints it:
 
 ```json
 {
@@ -99,6 +99,6 @@ python3 -m unittest discover -s evals -v
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Version 0.3.1. Made by [Dacard](https://www.dacard.ai).
+MIT. See [LICENSE](LICENSE). Version 0.3.2. Made by [Dacard](https://www.dacard.ai).
 
 Claude and Claude Code are trademarks of Anthropic, PBC. These skills are independent and not affiliated with or endorsed by Anthropic.

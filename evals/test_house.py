@@ -83,7 +83,7 @@ class Sample(unittest.TestCase):
 
     def test_brass_marks_only_the_hiring_managers_call(self):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
-        css = html.split("</style>", 1)[0].split(render_html.floor_fonts(svgkit.CSS), 1)[1]
+        css = html.split("</style>", 1)[0].split(render_html.floor_fonts(svgkit.CSS + svgkit.SCORECARD_CSS), 1)[1]
         rules = re.findall(r"[^}]*var\(--brass[^}]*}", css)
         self.assertTrue(rules and all(r.lstrip().startswith((".next", "}.next")) for r in rules), "brass is only the hiring manager's box")
         body = re.sub(r"<svg.*?</svg>", "", html.split("</style>", 1)[1], flags=re.S)
@@ -91,10 +91,12 @@ class Sample(unittest.TestCase):
         self.assertEqual(re.findall(r'class="o">([^<]*)<', body), ["Head of Product, Quoting squad"])
         self.assertEqual(re.findall(r'class="d">([^<]*)<', body), ["2026-11-23"])
         self.assertEqual(body.count('class="next"'), 1)
-        wide, tall = svgkit.visuals_in(html)
-        brass = lambda svg: [t for t in re.findall(r'style="color:var\(--brass\)">([^<]*)<', svg)]  # noqa: E731
-        self.assertEqual(brass(wide), ["HEAD OF PRODUCT, QUOTING SQUAD DECIDES BY 2026-11-23"])
-        self.assertEqual(brass(tall), ["HEAD OF PRODUCT, QUOTING SQUAD", "DECIDES BY 2026-11-23"])
+        # In the rows, brass is the person who decides, once, in the frame head: never in a row.
+        frame = svgkit.frames_in(html)[0]
+        self.assertEqual(re.findall(r'<span class="sc-o">.*?</svg>([^<]+)</span>', frame), ["Head of Product, Quoting squad decides"])
+        head = frame.split('<div class="sc-b">', 1)[0]
+        self.assertIn('class="sc-o"', head)
+        self.assertIn('<span class="sc-w">by 2026-11-23</span>', head)
 
     def test_no_status_colour_or_word_on_the_page(self):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
@@ -102,9 +104,7 @@ class Sample(unittest.TestCase):
         for colour in ("--landed", "--watch", "--stalled", 'class="st ', "ac landed", "rd "):
             self.assertNotIn(colour, body)
         self.assertIsNone(STATUS.search(visible(html)))
-        for svg in svgkit.visuals_in(html):
-            for colour in ("--landed", "--watch", "--stalled", "sk-st"):
-                self.assertNotIn(colour, svg)
+        self.assertNotRegex(svgkit.frames_in(html)[0], r'class="ac (landed|watch|stalled)"')
 
 
 class Figures(unittest.TestCase):
@@ -237,17 +237,17 @@ class Versions(unittest.TestCase):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
         skill = re.search(r'version: "([^"]+)"', (SKILL / "SKILL.md").read_text(encoding="utf-8")).group(1)
-        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.1"})
-        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.1, 2026-11-27"))
+        self.assertEqual({plugin, project, skill, render_html.VERSION}, {"0.3.2"})
+        self.assertTrue((ROOT / "CHANGELOG.md").read_text(encoding="utf-8").split("\n## ", 2)[1].startswith("0.3.2, 2026-11-27"))
 
     def test_vendored_files_match_their_pins(self):
         pins = json.loads((SKILL / "VENDORED.json").read_text(encoding="utf-8"))
         svgkit_pin = pins["landing-loop"]
-        self.assertEqual(svgkit_pin["commit"], "5d01756d08ab3eb92b457c3286729791df6bcf5f")
+        self.assertEqual(svgkit_pin["commit"], "78784efd2ecd5282f6ec264e545ce2075e459be2")
         for path, pin in {**pins["files"], **svgkit_pin["files"]}.items():
             self.assertEqual(hashlib.sha256((SKILL / path).read_bytes()).hexdigest(), pin["sha256"], f"{path} changed. Copy it again from its pinned commit.")
         self.assertEqual(sorted(p.name for p in (SKILL / "scripts" / "vendor").glob("*.py")), ["svgkit.py"])
-        self.assertEqual(svgkit_pin["files"]["scripts/vendor/svgkit.py"]["sha256"], "8526cf100159a9e5a8958bba4ceb0373a7edc265f481d63795d1731a5999d054")
+        self.assertEqual(svgkit_pin["files"]["scripts/vendor/svgkit.py"]["sha256"], "ceb6a0b094d4d5291f22d62ed6d9f528f955ec4599478306a0c2187152febf6d")
 
     def test_old_python_is_refused_with_a_message(self):
         text = (SKILL / "scripts" / "run.py").read_text(encoding="utf-8")
@@ -270,7 +270,7 @@ class FixRound(unittest.TestCase):
             'class="sk-hdr"',
             '<h1>One of three candidates, <span class="nw">K-01</span>, meets the hiring target.</h1>',
             '<span class="status">K-01: meets the target</span>',
-            'class="sk-wide"',
+            'class="sc scg"',
             "What to do next",
             'class="cols"',
             "<details><summary>Each candidate in full</summary>",
@@ -349,55 +349,81 @@ class FixRound(unittest.TestCase):
 
 
 class Visual(unittest.TestCase):
-    """Each candidate against the target, each skill area against its floor, the person who decides in brass."""
+    """One row per candidate on one scale, the failing skill area on the figure line, the person who decides in brass."""
 
     @classmethod
     def setUpClass(cls):
         cls.page = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
-        cls.visuals = svgkit.visuals_in(cls.page)
+        cls.frames = svgkit.frames_in(cls.page)
 
-    def test_a_wide_and_a_tall_variant(self):
-        self.assertEqual(len(self.visuals), 2)
-        self.assertIn('class="sk-wide"', self.visuals[0])
-        self.assertIn('viewBox="0 0 720 ', self.visuals[0])
-        self.assertIn('class="sk-tall"', self.visuals[1])
-        self.assertIn('viewBox="0 0 340 ', self.visuals[1])
+    def css(self) -> str:
+        return self.page.split("<style>", 1)[1].split("</style>", 1)[0]
 
     def test_the_visual_draws_only_figures_the_page_prints(self):
         self.assertEqual(svgkit.unprinted(self.page), [])
 
-    def test_one_block_per_candidate_and_a_floor_mark_per_floored_area(self):
-        loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
-        floored = sum(1 for c in loop["competencies"] if "floor" in c)
-        for svg in self.visuals:
-            texts = svgkit.texts_in(svg)
-            for c in CANDIDATES:
-                self.assertEqual(texts.count(c), 1, c)
-            self.assertEqual(texts.count("TARGET 3.00"), len(CANDIDATES))
-            self.assertEqual(texts.count("FLOOR 2.50"), floored * len(CANDIDATES))
-            self.assertEqual(texts.count("MEETS THE TARGET") + texts.count("BELOW THE TARGET"), len(CANDIDATES))
-            hid = re.search(r'<pattern id="([^"]+)"', svg).group(1)
-            # K-02 under its floor on Restraint; K-03 under the target and under its floor on Eval design.
-            self.assertEqual(svg.count(f'fill="url(#{hid})"'), 3)
-        ids = re.findall(r'<pattern id="([^"]+)"', self.page)
-        self.assertEqual(len(ids), len(set(ids)), "each SVG has its own hatch id")
+    def test_one_frame_one_row_per_candidate_and_the_failing_area_on_the_figure_line(self):
+        self.assertEqual(len(self.frames), 1)
+        frame = self.frames[0]
+        self.assertEqual(re.findall(r'<span class="sc-n">([^<]+)</span>', frame), list(CANDIDATES))
+        lines = [re.sub(r"<[^>]+>", "", x).replace("&lt;", "<") for x in re.findall(r'<span class="sc-l">(.*?)</span>', frame)]
+        self.assertEqual(
+            lines,
+            ["3.33 · TARGET 3.00", "3.23 · TARGET 3.00 · RESTRAINT 1.75 < FLOOR 2.50", "2.75 · TARGET 3.00 · EVAL DESIGN 2.33 < FLOOR 2.50"],
+        )
+        words = re.findall(r'<span class="sc-s">(.*?)</span></div>', frame)
+        self.assertEqual(words, ['<span class="sc-w">meets target</span>', '<span class="sc-w ink">below target</span>', '<span class="sc-w ink">below target</span>'])
+
+    def test_one_scale_for_the_frame_so_every_target_tick_lines_up(self):
+        ticks = set(re.findall(r'class="tg" x="([^"]+)"', self.frames[0]))
+        self.assertEqual(len(ticks), 1, ticks)
+        self.assertEqual(self.frames[0].count('<svg class="sc-rl"'), len(CANDIDATES))
 
     def test_the_visual_states_the_answer(self):
-        for svg in self.visuals:
-            self.assertIn('role="img"', svg)
-            label = html_unescape(re.search(r'aria-label="([^"]+)"', svg).group(1))
-            self.assertEqual(
-                label,
+        labels = [html_unescape(x) for x in re.findall(r'role="img" aria-label="([^"]+)"', self.page)]
+        self.assertEqual(
+            labels,
+            [
                 "One of three candidates, K-01, meets the hiring target of 3.00; K-01 scores 3.33 overall, meets the target; "
                 "K-02 scores 3.23 overall, below the target, under its floor on Restraint; "
                 "K-03 scores 2.75 overall, below the target, under its floor on Eval design. "
-                "Head of Product, Quoting squad decides by 2026-11-23.",
-            )
+                "Head of Product, Quoting squad decides by 2026-11-23."
+            ],
+        )
+
+    # The scorecard grammar (landing-loop tools/SCORECARD-ROLLOUT.md, svgkit 1.2.0)
+
+    def test_no_text_inside_a_picture_and_no_picture_scales(self):
+        self.assertEqual(svgkit.svgs_with_text(self.page), [], "text inside an SVG")
+        self.assertEqual(svgkit.scaled_svgs_in(self.page), [], "a picture with a viewBox would scale")
+
+    def test_labels_render_12px_and_names_14px(self):
+        css = self.css()
+        self.assertEqual(set(svgkit.font_sizes(css)), {"var(--sc-m)", "var(--sc-n)"})
+        self.assertIn("--sc-m:calc(12px / var(--sc-z))", css)
+        self.assertIn("--sc-n:calc(14px / var(--sc-z))", css)
+        self.assertIn(".scg{--sc-z:1;", css, "a sample page has no zoom")
+
+    def test_no_box_inside_the_frame_and_no_overlap(self):
+        self.assertEqual(svgkit.boxes_in_frames(self.page, self.css()), [])
+        self.assertNotIn('class="chip', self.page.split("<details><summary>For your engineers", 1)[0])
+        self.assertNotIn("position:absolute", svgkit.SCORECARD_CSS)
+        self.assertNotIn("border", re.search(r"\.status\{[^}]*\}", render_html.PAGE_CSS).group(0), "verdicts are text, never boxed chips")
+
+    def test_no_legacy_svgkit_primitive_draws_on_the_page(self):
+        import warnings
+
+        self.assertEqual(svgkit.legacy_in(self.page), [])
+        loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
+        out = build()
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            page = render_html.page(loop, out["results"], out["findings"], out["pool_flags"], out["ledger"], out["guardrails"])
+        self.assertEqual(svgkit.legacy_in(page), [])
 
     def test_public_copy_uses_the_plain_words(self):
         # The ledger and the engineers fold print the stored words; everything before them is public copy.
         public = svgkit.page_text(self.page.split("<details><summary>Every figure, with its source", 1)[0]).lower()
-        public += " " + " ".join(t for svg in self.visuals for t in svgkit.texts_in(svg)).lower()
         md = (SAMPLE / "ai-native-hiring-loop.md").read_text(encoding="utf-8").lower()
         for text in (public, md):
             for word in (" bar", "band", "competenc", "rubric", "anchor", "insufficient evidence", " items", "bet ", "record key", "landing/"):
@@ -411,8 +437,6 @@ class Visual(unittest.TestCase):
         sizes += [float(m) for m in re.findall(r'font-size="(\d+(?:\.\d+)?)"', self.page)]
         self.assertTrue(sizes)
         self.assertGreaterEqual(min(sizes), 11)
-        # The phone picture is 340 wide; at 390 and 375 the panel gives it 340px or more, so its 11px labels never shrink.
-        self.assertIn("@media (max-width:440px){.panel{margin:0 -8px;padding:16px 8px 14px}}", self.page)
         # The vendored template is untouched on disk: the page raises its small sizes as it inlines them.
         template = ROOT / "skills/ai-native-hiring-loop/assets/vendor/template.html"
         self.assertIn("font:400 10px/16px", template.read_text(encoding="utf-8"))
@@ -453,13 +477,13 @@ def html_unescape(text: str) -> str:
 class Readme(unittest.TestCase):
     def test_sections_in_the_house_order(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        order = ["```text", "## Try it on Acme", "## Install", "## Reads and writes", "## Record key", "## Limits", "Not yet run on a real team's data.", "## Licence"]
+        order = ["```text", "## Try it on Acme", "## Install", "## Reads and writes", "## Key in the project file", "## Limits", "Not yet run on a real team's data.", "## Licence"]
         at = [readme.find(s) for s in order]
         self.assertNotIn(-1, at, dict(zip(order, at, strict=True)))
         self.assertEqual(at, sorted(at))
         self.assertIn("/plugin marketplace add darrencard/landing-loop", readme)
         self.assertIn("/plugin install ai-native-hiring-loop@landing-loop", readme)
-        self.assertIn("hires the people who run the bets", readme)
+        self.assertIn("hires the people who run the projects", readme)
 
 
 class Cli(unittest.TestCase):

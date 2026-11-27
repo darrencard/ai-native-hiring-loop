@@ -6,12 +6,15 @@ at a pinned commit, see VENDORED.json) and draws its picture with svgkit (script
 byte-identical from landing-loop). Only a few rules for this page's layout are added.
 
 It reads top down for someone who has never run a hiring loop: the shared header, the answer as the heading, each
-candidate's verdict, the picture (each candidate against the target, each skill area against its floor, the person who
-decides in brass), then one thing to do next, owned by the hiring manager. Each candidate's reason and what to discuss
-first follow in two columns. The skill area tables, the debrief steps, the evidence ledger and everything technical
-sit in folds. Public copy uses plain words: target, skill area, scoring guide. results.json keeps its words.
+candidate's verdict, the picture as scorecard rows (svgkit 1.2.0): one row per candidate, the overall score against the
+target on one scale for the frame, the figure line `3.23 · TARGET 3.00 · RESTRAINT 1.75 < FLOOR 2.50` with any skill
+area under its floor kept on it, and MEETS TARGET or BELOW TARGET as a check word; the person who decides is in brass,
+once, in the frame head. Geist Mono 12px for labels and figures, Geist 14px for names, no text inside a picture, no
+box inside the frame. Then one thing to do next, owned by the hiring manager. Each candidate's reason and what to
+discuss first follow in two columns. The skill area tables, the debrief steps, the evidence ledger and everything
+technical sit in folds. Public copy uses plain words: target, skill area, scoring guide. results.json keeps its words.
 
-A hiring packet has no project status, so the page uses no status colour. The verdict prints as a plain mono chip.
+A hiring packet has no project status, so the page uses no status colour. Verdicts print as text, never boxed chips.
 Brass is only the hiring manager's call. It prints only what packet.view() holds, so it says what the Markdown twin
 says. Nothing is loaded from the network, nothing depends on the clock or the machine, and every piece of text from a
 file is escaped.
@@ -32,10 +35,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "vendor"))
 import svgkit as sk  # noqa: E402  (vendored, unchanged; see VENDORED.json)
 from packet import view  # noqa: E402
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "vendor" / "template.html"
 STYLE = re.compile(r"<style>(.*?)</style>", re.S)
-SCALE = (1, 4)  # the score scale; every line in the picture runs across it
 
 # Layout for this page only. Everything else comes from the template's stylesheet and svgkit.CSS.
 # The smallest text the page prints, at every width. The vendored template and svgkit keep their own sizes on disk
@@ -56,12 +58,8 @@ main.solo{margin-left:0}
 .solo .slide.cover{min-height:0;padding-top:40px;padding-bottom:48px;justify-content:flex-start}
 .solo h1{font-size:clamp(34px,4.6vw,60px);line-height:1;letter-spacing:-.04em;max-width:20ch;margin-bottom:20px}
 .solo .lede{margin-bottom:24px}
-.status{display:inline-block;font:400 11px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1)}
-.status{border:1px solid var(--line3);border-radius:3px;padding:1px 6px;white-space:nowrap}
-.verdict{margin:0 0 20px;display:flex;flex-wrap:wrap;gap:8px}
-.panel{border:1px solid var(--line);border-radius:12px;background:var(--s1);padding:24px 28px 20px}
-@media (min-width:1100px){.panel .sk{display:grid;grid-template-columns:720px minmax(0,1fr);gap:16px 40px;align-items:start}
-.panel .sk figcaption{margin-top:0;flex-direction:column;align-items:flex-start}}
+.status{display:inline-block;font:400 12px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--t1);white-space:nowrap}
+.verdict{margin:0 0 20px;display:flex;flex-wrap:wrap;gap:8px 28px}
 .next{margin-top:28px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 32px;align-items:baseline}
 .next{border:1px solid var(--brass);border-radius:12px;padding:20px 24px;background:var(--brass-bg)}
 .next>b{font:400 11px/22px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
@@ -87,11 +85,10 @@ main.solo{margin-left:0}
 ::selection{background:var(--t1);color:var(--bg)}
 :focus-visible{outline:2px solid var(--t1);outline-offset:3px;border-radius:3px}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
-@media (max-width:980px){.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:24px}.cols,.next{grid-template-columns:1fr}.panel{padding:18px 16px 16px}
+@media (max-width:980px){.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:24px}.cols,.next{grid-template-columns:1fr}
 .stack table,.stack tbody,.stack tr,.stack td{display:block}.stack tr:first-child{display:none}.stack tr{padding:10px 16px;border-bottom:1px solid var(--line)}
 .stack td{border:0;padding:3px 0;display:grid;grid-template-columns:118px 1fr;gap:12px}.stack td.num{text-align:left;white-space:normal}
 .stack td::before{content:attr(data-l);font:400 11px/20px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}}
-@media (max-width:440px){.panel{margin:0 -8px;padding:16px 8px 14px}}
 """
 
 
@@ -131,7 +128,7 @@ class Table:
         return f'<div class="tablewrap stack"><table>{head}{"".join(self.rows)}</table></div>'
 
 
-# The signature picture: each candidate against the target, each skill area against its floor
+# The signature picture: scorecard rows (svgkit 1.2.0)
 
 
 def short_area(r: dict[str, Any], cid: str) -> str:
@@ -142,91 +139,43 @@ def under_floor(r: dict[str, Any]) -> list[str]:
     return [short_area(r, f["where"]) for f in r["flags"] if f["rule"] == "floor"]
 
 
-def scale_row(x: float, y: float, w: float, *, score: str | None, mark: str | None, target: bool, hid: str, size: float) -> str:
-    """One line on the 1 to 4 scale: the track, the target or floor mark, the score as a dot with its value at the
-    right, and the gap hatched when the score falls short of the mark."""
-    lo, hi = SCALE
-    at = sk.scale((lo, hi), (x, x + w - 52))
-    parts = [sk.rule(x, y, x + w - 52, y, tone=sk.LINE2)]
-    if mark is not None:
-        mx = at(float(mark))
-        if score is not None and float(score) < float(mark):
-            parts.append(sk.hatched(at(float(score)), y - 4, mx - at(float(score)), 8, pattern_id=hid, rx=1))
-        if target:
-            parts.append(sk.target_tick(mx, y - 9, y + 9))
-        else:
-            parts.append(sk.rule(mx, y - 7, mx, y + 7, tone=sk.INK2, width=sk.STROKE))
-    if score is None:
-        parts.append(sk.label(x + w, y + 4, "none", anchor="end"))
-    else:
-        parts.append(sk.point(at(float(score)), y, r=5 if target else 4))
-        parts.append(sk.value(x + w, y + 5, score, anchor="end", size=size))
-    return "".join(parts)
+def floor_tail(r: dict[str, Any]) -> str:
+    """Each skill area under its floor, as the figure line prints it: `RESTRAINT 2.33 < FLOOR 2.50`."""
+    return " · ".join(
+        f"{c['short'].upper()} {c['mean']} < FLOOR {c['floor']}"
+        for c in r["competencies"]
+        if c["floor"] is not None and c["mean"] is not None and float(c["mean"]) < float(c["floor"])
+    )
 
 
-def candidate_block(x: float, y: float, w: float, r: dict[str, Any], hid: str) -> tuple[str, float]:
-    """One candidate: the code and verdict, the overall score against the target, then each skill area against its
-    floor. Returns the drawing and its height."""
-    parts = [sk.value(x, y + 16, r["candidate"], size=18), sk.label(x + w, y + 15, r["verdict"], anchor="end", tone=sk.INK)]
-    parts.append(sk.label(x, y + 44, "Overall"))
-    lo, hi = SCALE
-    at = sk.scale((lo, hi), (x, x + w - 52))
-    parts.append(sk.label(at(float(r["bar"])), y + 44, f"Target {r['bar']}", anchor="middle", tone=sk.INK2))
-    parts.append(scale_row(x, y + 62, w, score=r["overall"], mark=r["bar"], target=True, hid=hid, size=16))
-    yy = y + 96
-    parts.append(sk.rule(x, yy - 14, x + w, yy - 14, tone=sk.LINE))
-    for c in r["competencies"]:
-        parts.append(sk.value(x, yy, c["short"], size=12.5, tone=sk.INK2))
-        if c["floor"] is not None:
-            parts.append(sk.label(x + w - 52, yy, f"Floor {c['floor']}", anchor="end"))
-        parts.append(scale_row(x, yy + 14, w, score=c["mean"], mark=c["floor"], target=False, hid=hid, size=12.5))
-        yy += 40
-    return "".join(parts), yy - y - 14
-
-
-def decider(x: float, y: float, owner: str, by: str, stacked: bool) -> str:
-    """The person who decides, in brass: a person's call, not the agent's."""
-    when = f"by {by}" if by else "no date set"
-    parts = [sk.person(x + 7, y + 4, size=14)]
-    if stacked:
-        parts += [sk.label(x + 22, y - 4, owner, tone=sk.BRASS), sk.label(x + 22, y + 12, f"Decides {when}", tone=sk.BRASS)]
-    else:
-        parts.append(sk.label(x + 22, y + 3, f"{owner} decides {when}", tone=sk.BRASS))
-    return "".join(parts)
-
-
-def candidates_chart(v: dict[str, Any], variant: str) -> str:
-    """Wide: the candidates side by side, three to a row. Tall: one under another."""
-    wide = variant == "wide"
-    hid = f"sk-hl-hatch-{variant}"
-    parts = [sk.defs(sk.hatch_pattern(hid))]
-    cands = v["candidates"]
-    if wide:
-        per, gap = 3, 30.0
-        w = (sk.WIDE - gap * (per - 1)) / per
-        y, row_h = 0.0, 0.0
-        for i, r in enumerate(cands):
-            if i and i % per == 0:
-                y += row_h + 28
-            body, h = candidate_block((i % per) * (w + gap), y, w, r, hid)
-            parts.append(body)
-            row_h = max(row_h, h)
-            if i % per:
-                parts.append(sk.rule((i % per) * (w + gap) - gap / 2, y, (i % per) * (w + gap) - gap / 2, y + h, tone=sk.LINE))
-        y += row_h + 24
-        width = sk.WIDE
-    else:
-        width, y = sk.TALL, 0.0
-        for i, r in enumerate(cands):
-            if i:
-                parts.append(sk.rule(0, y - 14, width, y - 14, tone=sk.LINE2))
-            body, h = candidate_block(0, y, width, r, hid)
-            parts.append(body)
-            y += h + 30
-    parts.append(sk.rule(0, y, width, y, tone=sk.LINE))
-    parts.append(decider(0, y + 24, v["owner"], v["by"], stacked=not wide))
-    height = y + (40 if wide else 48)
-    return sk.frame("".join(parts), label=aria(v), height=height, width=width, variant=variant)
+def candidate_rows(v: dict[str, Any]) -> str:
+    """One row per candidate: the code, the overall score against the target on one scale for the frame (a range
+    line in one unit, so relative=False), the figure line with the failing skill area kept on it, and the verdict as a
+    check word: MEETS TARGET muted, BELOW TARGET in ink. The person who decides is in brass, once, in the frame head."""
+    scored = [r for r in v["candidates"] if r["overall"] is not None]
+    domain = sk.frame_domain([(None, float(r["overall"]), float(r["bar"])) for r in scored], relative=False)
+    rows = []
+    for r in v["candidates"]:
+        if r["overall"] is None:
+            rows.append(sk.sc_row(r["candidate"], figure=sk.figure_line("no overall score"), word=sk.check_word("not enough evidence", ink=True)))
+            continue
+        picture = sk.range_line(actual=float(r["overall"]), target=float(r["bar"]), domain=domain)
+        figure = sk.figure_line(r["overall"], target=r["bar"], tail=floor_tail(r))
+        word = sk.check_word("meets target") if r["band"] == "meets bar" else sk.check_word("below target", ink=True)
+        rows.append(sk.sc_row(r["candidate"], picture=picture, figure=figure, word=word))
+    when = f"by {v['by']}" if v["by"] else "no date set"
+    return sk.sc_frame(
+        rows,
+        label=aria(v),
+        title="Overall score",
+        head=["Candidate", "", "Overall · target · under floor", "Verdict"],
+        legend=sk.legend("target", f"target {v['bar']}") + sk.person_call(f"{v['owner']} decides", due=when),
+        caption=(
+            f"One row per candidate, on one scale. The dot is the overall score, the tick the target of {v['bar']}. "
+            "A skill area under its floor prints on the figure line and puts the candidate below the target, whatever the overall score."
+        ),
+        illustrative=bool(v["illustrative"]),
+    )
 
 
 def keep_ids(text: str) -> str:
@@ -324,22 +273,13 @@ def page(
     v = view(loop, results, findings, pool_flags, guards)
     ill = v["illustrative"]
     header = sk.page_header("AI-native hiring loop", date=v["as_of"][:10], version=f"v{VERSION}", illustrative=ill)
-    pic = sk.figure(
-        candidates_chart(v, "wide"),
-        candidates_chart(v, "tall"),
-        caption=f"Each line runs from 1 to 4, the scoring guide's scale; the dot is the score. The dashed mark is the target of {v['bar']} for the "
-        "overall score. The short upright marks are the floors: a skill area under its floor puts the candidate below the target, whatever the "
-        "overall score. Hatched: how far a score falls short. The person in brass decides.",
-        illustrative=ill,
-    )
     chips = "".join(f'<span class="status">{e(r["candidate"])}: {e(r["verdict"])}</span>' for r in v["candidates"])
     who = f'<span class="o">{e(v["owner"])}</span>'
     by = f'<span class="d">{e(v["by"])}</span>' if v["by"] else ""
     step = f'<div class="next"><b>What to do next</b><div><p>{e(v["decision"])}</p><span class="who">{who}{by}</span></div></div>'
     lede = f"{v['level']} role: {v['title'].removeprefix('Hiring loop: ')}. {v['lede']}"
     cover = (
-        f'<section class="slide cover">{header}<h1>{keep_ids(e(v["answer"]))}</h1><p class="lede">{e(lede)}</p>'
-        f'<p class="verdict">{chips}</p><div class="panel">{pic}</div>{step}</section>'
+        f'<section class="slide cover">{header}<h1>{keep_ids(e(v["answer"]))}</h1><p class="lede">{e(lede)}</p><p class="verdict">{chips}</p>{candidate_rows(v)}{step}</section>'
     )
     detail = (
         '<section class="slide"><div class="meta"><span>What the scores say</span></div><div class="cols">'
@@ -358,6 +298,6 @@ def page(
     more = f'<section class="slide"><div class="meta"><span>Detail</span></div>{"".join(folds)}</section>'
     return (
         '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        f'<title>{e(v["title"])}</title><style>{floor_fonts(stylesheet() + sk.CSS + PAGE_CSS)}</style></head><body><main class="solo">{cover}{detail}{more}'
+        f'<title>{e(v["title"])}</title><style>{floor_fonts(stylesheet() + sk.CSS + sk.SCORECARD_CSS + PAGE_CSS)}</style></head><body><main class="solo">{cover}{detail}{more}'
         f'<p class="foot">{e(v["foot"])}</p></main></body></html>\n'
     )
