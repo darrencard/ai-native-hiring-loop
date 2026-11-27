@@ -82,7 +82,7 @@ class Sample(unittest.TestCase):
         html = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
         body = re.sub(r"<style>.*?</style>", "", html, flags=re.S)
         brass = re.findall(r'style="color:var\(--brass\)[^"]*">([^<]*)<', body)
-        self.assertEqual(brass, ["Jordan Vale (Head of Product)", "by 2026-11-23"])
+        self.assertEqual(brass, ["Head of Product, Quoting squad", "by 2026-11-23"])
         self.assertEqual(body.count('class="need"'), 1)
 
     def test_no_status_colour_or_word_on_the_page(self):
@@ -98,7 +98,9 @@ class Figures(unittest.TestCase):
         out = build()
         self.assertGreater(len(out["ledger"]), 50)
         for r in out["ledger"]:
-            for key in ("value", "unit", "source", "as_of"):
+            self.assertTrue(r["value"] is None or isinstance(r["value"], (int, float)), r["id"])
+            self.assertNotIsInstance(r["value"], bool, r["id"])
+            for key in ("display", "unit", "source", "as_of"):
                 self.assertTrue(r[key], f"{r['id']} {key}")
             self.assertTrue(r["window"]["from"] and r["window"]["to"], r["id"])
             self.assertLessEqual(r["window"]["from"], r["window"]["to"], r["id"])
@@ -167,7 +169,7 @@ class Fairness(unittest.TestCase):
 
     def test_same_questions_figure_counts_every_candidate(self):
         g = {r["id"]: r["value"] for r in build()["guardrails"]}
-        self.assertEqual((g["pool.candidates"], g["pool.same_questions"], g["pool.items"], g["pool.after_debrief"]), ("3", "3", "14", "0"))
+        self.assertEqual((g["pool.candidates"], g["pool.same_questions"], g["pool.items"], g["pool.after_debrief"]), (3, 3, 14, 0))
 
 
 class DataIn(unittest.TestCase):
@@ -232,6 +234,90 @@ class Versions(unittest.TestCase):
     def test_old_python_is_refused_with_a_message(self):
         text = (SKILL / "scripts" / "run.py").read_text(encoding="utf-8")
         self.assertIn("sys.version_info < (3, 11)", text)
+
+
+ORG_CHART = {"Head of Product, Quoting squad", "Lead, Quoting squad", "Tech lead, Quoting squad", "Product manager, Quoting squad"}
+
+
+class FixRound(unittest.TestCase):
+    """The independent review: scannable page, org-chart roles, the Quoting squad, numbers as numbers, the Python floor."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (SAMPLE / "ai-native-hiring-loop.html").read_text(encoding="utf-8")
+
+    def test_top_is_an_answer_five_lines_and_the_decision_then_one_fold(self):
+        top, rest = self.page.split('<details class="more">', 1)
+        self.assertEqual(self.page.count('<details class="more">'), 1)
+        self.assertIn('<p class="answer">1 of 3 candidates meets the bar of 3.00: K-01.</p>', top)
+        self.assertEqual(re.search(r'<ul class="five">(.*?)</ul>', top, re.S).group(1).count("<li>"), 5)
+        self.assertIn('class="need"', top)
+        self.assertNotIn('class="need"', rest)
+        self.assertLess(len(visible(top).split()), 250, "the unfolded top must read in 30 seconds")
+
+    def test_owner_is_one_org_chart_role_and_no_invented_person(self):
+        loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
+        self.assertIn(loop["decision"]["owner"], ORG_CHART)
+        self.assertNotIn("role", loop["decision"])
+        for p in TEXT:
+            text = p.read_text(encoding="utf-8")
+            if p.name == "test_house.py":
+                continue
+            for word in ("Jordan", "Vale", "Acme Assist", "quote-drafting assistant"):
+                self.assertNotIn(word, text, p)
+
+    def test_the_team_is_the_quoting_squad_on_the_page_and_in_the_readme(self):
+        self.assertIn("Quoting squad, one of 12 squads at Acme", visible(self.page))
+        self.assertIn("Quoting squad", (ROOT / "README.md").read_text(encoding="utf-8"))
+
+    def test_results_json_stores_numbers_as_numbers(self):
+        with tempfile.TemporaryDirectory() as d, redirect_stdout(io.StringIO()):
+            self.assertEqual(run.main(["demo", "--out", d]), 0)
+            payload = json.loads((Path(d) / "results.json").read_text(encoding="utf-8"))
+        k01 = next(r for r in payload["results"] if r["candidate"] == "K-01")
+        self.assertEqual((k01["overall"], k01["bar"]), (3.33, 3.0))
+        self.assertTrue(all(isinstance(c["mean"], float) for c in k01["competencies"]))
+        row = next(r for r in payload["ledger"] if r["id"] == "K-01.overall")
+        self.assertEqual((row["value"], row["display"]), (3.33, "3.33"))
+        for r in payload["ledger"]:
+            self.assertTrue(r["value"] is None or type(r["value"]) in (int, float), r["id"])
+        self.assertIn('"value": 3.33,', (ROOT / "README.md").read_text(encoding="utf-8"))
+
+    def test_selection_and_focus_print_in_ink(self):
+        css = self.page.split("</style>", 1)[0]
+        self.assertLess(css.find("::selection{background:var(--landed)"), css.rfind("::selection{background:var(--t1)"))
+        self.assertIn(":focus-visible{outline:2px solid var(--t1)", css.rsplit("::selection", 1)[1])
+
+    def test_a_figure_at_the_end_of_a_sentence_is_still_checked(self):
+        import packet
+
+        out = build()
+        loop = json.loads((FIX / "loop.json").read_text(encoding="utf-8"))
+        found = packet.check_note("K-01 scored 3.9.", loop, out["results"], out["ledger"])
+        self.assertEqual([f["rule"] for f in found], ["figure-not-computed"])
+        self.assertEqual(packet.check_note("K-01 scored 3.33.\n5. Next step.", loop, out["results"], out["ledger"]), [])
+
+    def test_entry_scripts_check_the_version_before_any_other_import(self):
+        import ast
+
+        for path in (SKILL / "scripts" / "run.py", SAMPLE / "sample.py"):
+            body = [n for n in ast.parse(path.read_text(encoding="utf-8")).body if not (isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant))]
+            self.assertEqual([type(n).__name__ for n in body[:3]], ["ImportFrom", "Import", "If"], path.name)
+            self.assertEqual([a.name for a in body[1].names], ["sys"], path.name)
+            self.assertIn("version_info", ast.unparse(body[2].test), path.name)
+
+    def test_an_old_python_gets_the_plain_message(self):
+        old = next((p for p in ("/usr/bin/python3", "/usr/bin/python3.9") if Path(p).exists()), None)
+        if not old:
+            self.skipTest("no system Python on this machine")
+        probe = subprocess.run([old, "-c", "import sys; print(sys.version_info >= (3, 11))"], capture_output=True, text=True, check=False)
+        if probe.stdout.strip() != "False":
+            self.skipTest("the system python3 is 3.11 or later")
+        for path in (SKILL / "scripts" / "run.py", SAMPLE / "sample.py"):
+            r = subprocess.run([old, str(path), "--help"], capture_output=True, text=True, check=False)
+            self.assertEqual(r.returncode, 1, path.name)
+            self.assertIn("needs Python 3.11 or later; try python3.12", r.stderr)
+            self.assertNotIn("Traceback", r.stderr)
 
 
 class Readme(unittest.TestCase):

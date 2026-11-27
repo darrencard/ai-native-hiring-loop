@@ -2,13 +2,21 @@
 
 *Illustrative. Acme is an invented company; every candidate, interviewer, name and score here is invented.*
 
-Senior (L6). Acme Assist squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative. Loop version acme-spm-ai-2026-11. Debrief 2026-11-20.
+**1 of 3 candidates meets the bar of 3.00: K-01.**
 
-3 candidates, the same 14 items each, scored in code against the rubric before the debrief. Jordan Vale (Head of Product) makes the hire decision.
+- Meets bar: K-01 (overall 3.33).
+- Below bar: K-02 (overall 3.23; under its floor on Restraint: knowing when not to use a model); K-03 (overall 2.75; under its floor on Eval design).
+- Insufficient evidence: none.
+- To discuss first: K-03: interviewers differ by 2.00 on Eval design; K-03: interviewers differ by 2.00 on Cost judgment.
+- Fairness: 3 of 3 candidates got the same 14 items; 0 scores recorded at or after the debrief started.
+
+Senior (L6). Quoting squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative. Loop version acme-spm-ai-2026-11. Debrief 2026-11-20.
+
+3 candidates, the same 14 items each, scored in code against the rubric before the debrief. Hire decision: Head of Product, Quoting squad.
 
 ## Decision
 
-**Owner: Jordan Vale (Head of Product).** By 2026-11-23. Hire or not, for each candidate. The band says how the evidence compares with the bar this loop set. It does not decide, and it does not predict performance.
+**Owner: Head of Product, Quoting squad.** By 2026-11-23. Hire or not, for each candidate. The band says how the evidence compares with the bar this loop set. It does not decide, and it does not predict performance.
 
 ## Candidates against the bar
 

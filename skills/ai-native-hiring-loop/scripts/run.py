@@ -24,18 +24,21 @@ Standard library only. Python 3.11 or later. No network calls.
 
 from __future__ import annotations
 
-import argparse
-import json
-import shutil
 import sys
-from pathlib import Path
 
-if sys.version_info < (3, 11):  # noqa: UP036  (stop with a plain message, not an import error, on the macOS system Python)
-    sys.exit("ai-native-hiring-loop needs Python 3.11 or later; this is " + sys.version.split()[0])
+# Check the interpreter before importing or reading anything (stop with a plain message, not an import error,
+# on the macOS system Python).
+if sys.version_info < (3, 11):  # noqa: UP036
+    sys.exit("ai-native-hiring-loop needs Python 3.11 or later; try python3.12 (this is " + sys.version.split()[0] + ")")
+
+import argparse  # noqa: E402
+import json  # noqa: E402
+import shutil  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from aggregate import guardrail_figures, interviewer_drift, score_candidate  # noqa: E402
+from aggregate import guardrail_figures, interviewer_drift, score_candidate, show  # noqa: E402
 from guardrails import check_design, check_pool, check_sheet, decision_owner, errors, finding  # noqa: E402
 from importer import read_rows, to_sheets  # noqa: E402
 from packet import check_note, ledger_csv, render_kit, render_packet  # noqa: E402
@@ -121,7 +124,7 @@ def cmd_score(args: argparse.Namespace) -> int:
     html = page(loop, out["results"], out["findings"], out["pool_flags"], out["ledger"], out["guardrails"])
     (d / "packet.html").write_text(html, encoding="utf-8")
     for r in out["results"]:
-        print(f"{r['candidate']}: overall {r['overall'] or 'none'}, {r['band']}, {len(r['flags'])} item(s) to discuss")
+        print(f"{r['candidate']}: overall {show(r['overall']) or 'none'}, {r['band']}, {len(r['flags'])} item(s) to discuss")
     print(f"Wrote {d / 'results.json'}, {d / 'ledger.csv'}, {d / 'packet.md'} and {d / 'packet.html'}")
     return 0
 

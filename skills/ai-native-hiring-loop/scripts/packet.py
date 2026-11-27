@@ -18,7 +18,7 @@ from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from typing import Any
 
-from aggregate import DRIFT_FLAG, NEAR_BAR, fmt
+from aggregate import DRIFT_FLAG, NEAR_BAR, fmt, show
 from guardrails import banned_terms
 
 LEDGER_FIELDS = ("id", "candidate", "figure", "value", "unit", "source", "window_from", "window_to", "as_of", "method")
@@ -43,9 +43,11 @@ BAND_PHRASES = {
     "below bar": re.compile(r"\bbelow (?:the )?bar\b|\bunder (?:the )?bar\b|\bmisses (?:the )?bar\b"),
     "insufficient evidence": re.compile(r"\binsufficient evidence\b|\bnot enough evidence\b"),
 }
+# A numbered-list marker ("5. Scores do not change") is a position, not a figure.
+LIST_MARK = re.compile(r"^\s*\d+\.(?:\s+|$)")
 # Identifiers such as K-01, C2, Q10 or S3 carry digits but are not figures.
 IDENT = re.compile(r"\b[A-Za-z]+-?\d+(?:\.\d+)*\b")
-NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])")
+NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?!\w|\.\d)")  # a full stop after a figure ends the sentence, it does not hide the figure
 
 
 def cell(text: Any) -> str:
@@ -113,15 +115,23 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
     sources = sorted({r.get("timestamps_from") or "not stated" for r in results})
     n, items = g["candidates"]["value"], g["items"]["value"]
     who = f"{owner} ({decision['role']})" if decision.get("role") else owner
-    lede = f"{n} candidates, the same {items} items each, scored in code against the rubric before the debrief. {who} makes the hire decision."
+    lede = f"{n} candidates, the same {items} items each, scored in code against the rubric before the debrief. Hire decision: {who}."
     candidates = []
-    for r in results:
+    for raw in results:
+        # results hold numbers; the packet prints them to 2 decimals, the same in Markdown and HTML.
+        r = {
+            **raw,
+            "overall": show(raw["overall"]),
+            "bar": show(raw["bar"]),
+            "ai_judgment": {k: show(x) for k, x in raw["ai_judgment"].items()},
+            "competencies": [{**c, "mean": show(c["mean"]), "spread": show(c["spread"])} for c in raw["competencies"]],
+        }
         floors = [f for f in r["flags"] if f["rule"] == "floor"]
         if r["band"] == "insufficient evidence":
             why = "At least one competency has no eligible score, so there is no overall score."
         elif floors:
             under = "; ".join(f["message"].split(";")[0] for f in floors)
-            if Fraction(r["overall"]) < Fraction(r["bar"]):
+            if raw["overall"] < raw["bar"]:
                 why = f"Overall {r['overall']} is under the bar of {r['bar']}, and {under}."
             else:
                 why = f"Overall {r['overall']} clears the bar of {r['bar']}, but {under}, so the band is below bar."
@@ -141,6 +151,7 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
         ("No banned criteria", "Criteria that judge the person, not the work (fit, a hunch, the right school), are blocked in the loop, in the evidence and in the decision note."),
     ]
     warnings = [f"{f['where']}: {f['message']}" for f in findings if f["level"] == "warning"]
+    answer, summary = _top(candidates, pool_flags, g, show(results[0]["bar"]) if results else fmt(Fraction(str(loop["calibration"]["bar"]))))
     return {
         "title": f"Hiring loop: {role['title']}",
         "level": role["level"],
@@ -149,10 +160,12 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
         "illustrative": bool(loop.get("illustrative")),
         "as_of": g["candidates"]["as_of"],
         "lede": lede,
+        "answer": answer,
+        "summary": summary,
         "owner": who,
         "by": decision.get("by", ""),
         "decision": "Hire or not, for each candidate. The band says how the evidence compares with the bar this loop set. It does not decide, and it does not predict performance.",
-        "bar": results[0]["bar"] if results else fmt(Fraction(str(loop["calibration"]["bar"]))),
+        "bar": show(results[0]["bar"]) if results else fmt(Fraction(str(loop["calibration"]["bar"]))),
         "candidates": candidates,
         "pool_flags": pool_flags,
         "guardrails": guardrails,
@@ -162,12 +175,46 @@ def view(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dic
     }
 
 
+def _top(candidates: list[dict[str, Any]], pool_flags: list[dict[str, str]], g: dict[str, Any], bar: str) -> tuple[str, list[str]]:
+    """The one-line answer and the five summary lines a leader reads first. Each band on its own line."""
+    by_band: dict[str, list[dict[str, Any]]] = {"meets bar": [], "below bar": [], "insufficient evidence": []}
+    for r in candidates:
+        by_band.setdefault(r["band"], []).append(r)
+    meets = [r["candidate"] for r in by_band["meets bar"]]
+    n = len(candidates)
+    answer = f"{len(meets)} of {n} candidates meets the bar of {bar}: {', '.join(meets)}." if meets else f"None of the {n} candidates meets the bar of {bar}."
+
+    def listed(rs: list[dict[str, Any]]) -> str:
+        if not rs:
+            return "none"
+        parts = []
+        for r in rs:
+            floors = [f["message"].split(",")[0] for f in r["flags"] if f["rule"] == "floor"]
+            extra = f"; under its floor on {' and '.join(x.split(' is ')[0] for x in floors)}" if floors else ""
+            parts.append(f"{r['candidate']} (overall {r['overall'] or 'none'}{extra})")
+        return "; ".join(parts)
+
+    spreads = [f"{r['candidate']}: {f['message'].split(';')[0]}" for r in candidates for f in r["flags"] if f["rule"] == "spread"]
+    drift = [f["message"].split(";")[0] for f in pool_flags]
+    first = spreads + drift
+    summary = [
+        f"Meets bar: {listed(by_band['meets bar'])}.",
+        f"Below bar: {listed(by_band['below bar'])}.",
+        f"Insufficient evidence: {listed(by_band['insufficient evidence'])}.",
+        f"To discuss first: {'; '.join(first) if first else 'nothing flagged'}.",
+        f"Fairness: {g['same_questions']['value']} of {n} candidates got the same {g['items']['value']} items; "
+        f"{g['after_debrief']['value']} scores recorded at or after the debrief started.",
+    ]
+    return answer, summary
+
+
 def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings: list[dict[str, str]], pool_flags: list[dict[str, str]], guards: list[dict[str, Any]]) -> str:
     """The plain-text twin of the HTML page."""
     v = view(loop, results, findings, pool_flags, guards)
     lines = [f"# {v['title']}", ""]
     if v["illustrative"]:
         lines += ["*Illustrative. Acme is an invented company; every candidate, interviewer, name and score here is invented.*", ""]
+    lines += [f"**{v['answer']}**", ""] + [f"- {s}" for s in v["summary"]] + [""]
     lines += [f"{v['level']}. {v['team']} Loop version {v['version']}. Debrief {v['as_of'][:10]}.", "", v["lede"], ""]
     by = f" By {v['by']}." if v["by"] else ""
     lines += ["## Decision", "", f"**Owner: {v['owner']}.**{by} {v['decision']}", ""]
@@ -199,12 +246,12 @@ def render_packet(loop: dict[str, Any], results: list[dict[str, Any]], findings:
     return "\n".join(lines)
 
 
-def ledger_csv(rows: list[dict[str, str]]) -> str:
+def ledger_csv(rows: list[dict[str, Any]]) -> str:
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=LEDGER_FIELDS, lineterminator="\n")
     w.writeheader()
     for r in rows:
-        flat = {**r, "window_from": r["window"]["from"], "window_to": r["window"]["to"]}
+        flat = {**r, "value": r.get("display", r["value"]), "window_from": r["window"]["from"], "window_to": r["window"]["to"]}
         w.writerow({k: flat[k] for k in LEDGER_FIELDS})
     return buf.getvalue()
 
@@ -216,10 +263,10 @@ def _num(text: str) -> Decimal | None:
         return None
 
 
-def _allowed_numbers(loop: dict[str, Any], ledger: list[dict[str, str]]) -> set[Decimal]:
+def _allowed_numbers(loop: dict[str, Any], ledger: list[dict[str, Any]]) -> set[Decimal]:
     """Every value a note may print. Compared as numbers, so 4.00 may be written 4.0 or 4."""
     texts = {"1", "2", "3", "4"}  # the score scale
-    texts |= {r["value"] for r in ledger}
+    texts |= {str(r.get("display", r["value"])) for r in ledger}
     cal = loop["calibration"]
     texts |= {str(cal["bar"]), str(cal["panel_min"]), str(cal["spread_flag"])}
     texts |= {str(c["weight"]) for c in loop["competencies"]}
@@ -238,7 +285,7 @@ def _allowed_numbers(loop: dict[str, Any], ledger: list[dict[str, str]]) -> set[
     return out
 
 
-def check_note(text: str, loop: dict[str, Any], results: list[dict[str, Any]], ledger: list[dict[str, str]]) -> list[dict[str, str]]:
+def check_note(text: str, loop: dict[str, Any], results: list[dict[str, Any]], ledger: list[dict[str, Any]]) -> list[dict[str, str]]:
     """Return findings for a free-text debrief note. Any finding blocks it."""
     out: list[dict[str, str]] = []
     allowed = _allowed_numbers(loop, ledger)
@@ -247,7 +294,7 @@ def check_note(text: str, loop: dict[str, Any], results: list[dict[str, Any]], l
         if not sentence.strip():
             continue
         low = sentence.lower()
-        stripped = IDENT.sub(" ", sentence)
+        stripped = LIST_MARK.sub(" ", IDENT.sub(" ", sentence))
         for num in NUMBER.findall(stripped):
             if _num(num) not in allowed:
                 out.append({"rule": "figure-not-computed", "where": f"sentence {n}", "message": f"{num} is not a computed figure; cite one from ledger.csv or remove it"})

@@ -2,7 +2,7 @@
 
 *Illustrative. Every name, figure and score in this kit is invented.*
 
-Team: Acme Assist squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative.. Loop version acme-spm-ai-2026-11.
+Team: Quoting squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative.. Loop version acme-spm-ai-2026-11.
 
 ## Outcomes for the first year
 
@@ -69,7 +69,7 @@ Learns from trades customers directly and brings design and engineering into dec
 
 ## S1 Work sample: should drafted quotes auto-send? (90 minutes)
 
-**Task.** Acme Assist drafts quotes for plumbers and electricians from a job note and a parts list. A large customer asks for drafts to send without review. You get 40 anonymised, illustrative job notes with the drafts the assistant produced and the quotes the trade sent. In 90 minutes, write a one-page recommendation: what you would ship, the eval cases that would gate it, the cost per drafted quote, and which steps should not use a model. Using Claude or any other tool is allowed and expected; say where you used it.
+**Task.** The Quoting squad's assistant drafts quotes for plumbers and electricians from a job note and a parts list. A large customer asks for drafts to send without review. You get 40 anonymised, illustrative job notes with the drafts the assistant produced and the quotes the trade sent. In 90 minutes, write a one-page recommendation: what you would ship, the eval cases that would gate it, the cost per drafted quote, and which steps should not use a model. Using Claude or any other tool is allowed and expected; say where you used it.
 
 ### W1 Eval cases and pass line (C2, tests evals)
 

@@ -30,13 +30,18 @@ SCORE_UNIT = "score, 1 to 4"
 POINTS_UNIT = "points on the 1 to 4 scale"
 
 
-def figure(fid: str, candidate: str, label: str, value: str, unit: str, source: str, window: tuple[str, str], as_of: str, method: str) -> dict[str, Any]:
-    """One ledger row: every figure carries value, unit, source, window (from, to) and as_of."""
+def figure(fid: str, candidate: str, label: str, value: Fraction | int | None, unit: str, source: str, window: tuple[str, str], as_of: str, method: str) -> dict[str, Any]:
+    """One ledger row: every figure carries value, unit, source, window (from, to) and as_of.
+
+    value is a number (a count stays an int, a mean is rounded half-up to 2 decimals), or null when there is
+    no eligible score. display is the same figure as printed, so a reader never parses text for a number.
+    """
     return {
         "id": fid,
         "candidate": candidate,
         "figure": label,
-        "value": value,
+        "value": num(value) if isinstance(value, Fraction) else value,
+        "display": "none" if value is None else (fmt(value) if isinstance(value, Fraction) else str(value)),
         "unit": unit,
         "source": source,
         "window": {"from": window[0], "to": window[1]},
@@ -60,6 +65,17 @@ def fmt(value: Fraction | None) -> str | None:
     return str(d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
+def num(value: Fraction | None) -> float | None:
+    """The same rounding as fmt, as a number for results.json."""
+    printed = fmt(value)
+    return None if printed is None else float(printed)
+
+
+def show(value: float | int | None) -> str | None:
+    """A results.json number as the packet prints it: 2 decimals, or None when there is no score."""
+    return None if value is None else f"{value:.2f}"
+
+
 def _mean(values: list[int]) -> Fraction | None:
     return Fraction(sum(values), len(values)) if values else None
 
@@ -80,9 +96,8 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
     window = candidate_window(sheet)
 
     def row(fid: str, label: str, value: Fraction | int | None, positions: list[int], method: str, unit: str = SCORE_UNIT) -> None:
-        printed = fmt(value) if isinstance(value, Fraction) or value is None else str(value)
         source = _refs(sheet_name, positions) if positions else f"{sheet_name}: no eligible score"
-        ledger.append(figure(f"{cand}.{fid}", cand, label, printed if printed is not None else "none", unit, source, window, window[1], method))
+        ledger.append(figure(f"{cand}.{fid}", cand, label, value, unit, source, window, window[1], method))
 
     comps: list[dict[str, Any]] = []
     weighted = Fraction(0)
@@ -124,10 +139,10 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
                 "id": c["id"],
                 "name": c["name"],
                 "weight": c["weight"],
-                "mean": fmt(mean),
+                "mean": num(mean),
                 "raters": len(rater_means),
-                "spread": fmt(spread),
-                "rater_means": {k: fmt(v) for k, v in rater_means.items()},
+                "spread": num(spread),
+                "rater_means": {k: num(v) for k, v in rater_means.items()},
             }
         )
 
@@ -135,11 +150,11 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
     all_positions = [p for p, _ in eligible]
     row("overall", "Overall weighted score (1 to 4)", overall, all_positions, "weight-averaged mean of competency scores")
 
-    ai: dict[str, str | None] = {}
+    ai: dict[str, float | None] = {}
     for kind in AI_JUDGMENT_KINDS:
         rows = [(p, r) for p, r in eligible if index[r["item"]]["ai_judgment"] == kind]
         m = _mean([r["score"] for _, r in rows])
-        ai[kind] = fmt(m)
+        ai[kind] = num(m)
         row(f"ai.{kind}", f"AI judgment, {kind}: mean score (1 to 4)", m, [p for p, _ in rows], "mean of eligible work-sample criterion scores")
 
     if overall is None:
@@ -161,8 +176,8 @@ def score_candidate(loop: dict[str, Any], sheet: dict[str, Any], sheet_name: str
 
     return {
         "candidate": cand,
-        "overall": fmt(overall),
-        "bar": fmt(bar),
+        "overall": num(overall),
+        "bar": num(bar),
         "band": band,
         "competencies": comps,
         "ai_judgment": ai,
@@ -206,7 +221,7 @@ def interviewer_drift(loop: dict[str, Any], sheets: list[tuple[dict[str, Any], s
                 f"pool.{who}.drift",
                 "pool",
                 f"{who}: mean minus panel mean on the same items",
-                fmt(drift) or "none",
+                drift,
                 POINTS_UNIT,
                 "; ".join(sorted(refs[who])),
                 window,
@@ -264,4 +279,4 @@ def guardrail_figures(loop: dict[str, Any], sheets: list[tuple[dict[str, Any], s
             f"minimum distinct interviewers per criterion; the loop needs {max([need[s] for s in ws] or [0])}",
         ),
     ]
-    return [figure(f"pool.{fid}", "pool", label, str(v), unit, names, window, window[1], method) for fid, label, v, unit, method in rows]
+    return [figure(f"pool.{fid}", "pool", label, v, unit, names, window, window[1], method) for fid, label, v, unit, method in rows]

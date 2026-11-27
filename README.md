@@ -16,7 +16,7 @@ A free Claude skill that designs a structured hiring loop for an AI-fluent produ
 
 ## Try it on Acme
 
-Acme is invented: invoicing software for trades businesses. The role is a Senior Product Manager for its quote-drafting assistant, with three invented candidates and five invented interviewers. Every figure is illustrative.
+Acme is invented: invoicing software for trades businesses. The role is a Senior Product Manager in its Quoting squad, with three invented candidates and five invented interviewers. Every figure is illustrative.
 
 ```bash
 python3 examples/acme/sample.py
@@ -30,7 +30,7 @@ It renders [examples/acme/ai-native-hiring-loop.html](examples/acme/ai-native-hi
 | K-02 | 3.23 | 3.00 | below bar | 4.00 | 3.00 | 1.50 |
 | K-03 | 2.75 | 3.00 | below bar | 2.00 | 3.00 | 3.00 |
 
-K-02 clears the overall bar but is below bar: restraint sits under its floor. K-03's interviewers differ by 2 points on eval design, so the packet puts that first in the debrief. The decision, by 2026-11-23, is Jordan Vale's (Head of Product, invented).
+K-02 clears the overall bar but is below bar: restraint sits under its floor. K-03's interviewers differ by 2 points on eval design, so the packet puts that first in the debrief. The Head of Product, Quoting squad, decides by 2026-11-23. The page opens with a one-line answer, five summary lines and that decision; the rest folds away.
 
 ## Install
 
@@ -64,13 +64,14 @@ Live first means the export from the tool that holds the system clock: your appl
 
 ## Record key
 
-None. This is a team-level skill, outside the bet loop: it reads the team's hiring loop, not a bet, and writes no key in any `landing/<bet>.json`. Each figure in `results.json` has the same shape the loop uses:
+None. This is a team-level skill, outside the bet loop: it reads the team's hiring loop, not a bet, and writes no key in any `landing/<bet>.json`. Each figure in `results.json` has the same shape the loop uses. `value` is a number (null when there is no eligible score); `display` is how the packet prints it:
 
 ```json
 {
   "id": "K-01.overall",
   "figure": "Overall weighted score (1 to 4)",
-  "value": "3.33",
+  "value": 3.33,
+  "display": "3.33",
   "unit": "score, 1 to 4",
   "source": "K-01.json#scores[0]; K-01.json#scores[1]; ...",
   "window": {"from": "2026-11-16T16:00:00+00:00", "to": "2026-11-20T17:00:00+00:00"},

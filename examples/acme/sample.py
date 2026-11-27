@@ -14,14 +14,18 @@ Usage, from the repo root (Python 3.11 or later):
 
 from __future__ import annotations
 
-import argparse
-import contextlib
-import io
-import os
-import shutil
 import sys
-import tempfile
-from pathlib import Path
+
+if sys.version_info < (3, 11):  # noqa: UP036
+    sys.exit("ai-native-hiring-loop needs Python 3.11 or later; try python3.12 (this is " + sys.version.split()[0] + ")")
+
+import argparse  # noqa: E402
+import contextlib  # noqa: E402
+import io  # noqa: E402
+import os  # noqa: E402
+import shutil  # noqa: E402
+import tempfile  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skills" / "ai-native-hiring-loop" / "scripts"))

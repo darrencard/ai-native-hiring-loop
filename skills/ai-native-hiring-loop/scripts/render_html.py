@@ -4,6 +4,10 @@ The page takes the report's whole stylesheet from its template (assets/vendor/te
 byte-identical at a pinned commit, see VENDORED.json), so it is the same brand family as the deck. It follows the
 report's references/design.md: mono capitals for labels, sans for sentences; hairlines, not boxes; brass only for
 a person's call (the hiring manager and the decision date); grey for agent work and ink for the figure.
+Selection and focus print in ink: the template paints them green, and green is did-it-land's colour.
+
+A leader gets the point from the top: a one-line answer, five summary lines and the decision with its owner
+and date. Everything else folds under one <details>.
 
 A hiring packet has no bet status, so the page uses no status colour at all. A band (meets bar, below bar,
 insufficient evidence) is this skill's own check word and prints as a plain mono chip.
@@ -48,8 +52,15 @@ main.solo{margin-left:0}
 .solo ol.steps li{display:list-item;padding:8px 0;border-top:1px solid var(--line)}
 .ledger td{font-size:11.5px}
 .ledger td.src{font-family:var(--mono);font-size:10.5px;color:var(--t3);word-break:break-word}
+.answer{font-size:22px;line-height:30px;color:var(--t1);max-width:760px;margin:6px 0 14px}
+.five{margin:0;padding-left:18px;color:var(--t2);font-size:14px;line-height:24px;max-width:820px}
+details.more{margin:0}
+details.more>summary{max-width:1120px;margin:0 auto;padding:22px 40px;cursor:pointer;border-top:1px solid var(--line)}
+details.more>summary{font:400 11px/16px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t1)}
+::selection{background:var(--t1);color:var(--bg)}
+:focus-visible{outline:2px solid var(--t1);outline-offset:3px;border-radius:3px}
 .foot{max-width:1120px;margin:0 auto;padding:28px 40px 64px;color:var(--t3);font-size:12px}
-@media (max-width:980px){.rows>div{grid-template-columns:1fr;gap:2px}.foot{padding:24px 16px 48px}.solo .slide.cover{padding-top:48px}
+@media (max-width:980px){.rows>div{grid-template-columns:1fr;gap:2px}.foot{padding:24px 16px 48px}details.more>summary{padding:18px 16px}.solo .slide.cover{padding-top:48px}
 .solo .slide{padding:40px 16px 32px}.solo .sc{padding:6px 16px 14px}.solo .sc-h,.solo .sc-r{grid-template-columns:1fr;gap:8px}.sc-h span:last-child,.sc-s{text-align:left}}
 """
 
@@ -123,7 +134,7 @@ def candidate_section(r: dict[str, Any], n: int) -> str:
 
 def ledger_table(ledger: list[dict[str, Any]]) -> str:
     rows = "".join(
-        f'<tr><td>{e(r["id"])}</td><td>{e(r["figure"])}</td><td class="num">{e(r["value"])}</td><td>{e(r["unit"])}</td>'
+        f'<tr><td>{e(r["id"])}</td><td>{e(r["figure"])}</td><td class="num">{e(r["display"])}</td><td>{e(r["unit"])}</td>'
         f'<td class="mo">{e(r["window"]["from"][:16])} to {e(r["window"]["to"][:16])}</td><td class="src">{e(r["source"])}</td></tr>'
         for r in ledger
     )
@@ -161,16 +172,19 @@ def page(
     guard_rows += "".join(f"<div><span>Warning</span><span>{e(w)}</span></div>" for w in v["warnings"])
     steps = "".join(f"<li>{e(s)}</li>" for s in v["steps"])
     team = f"{v['level']}. {v['team']}"
+    five = "".join(f"<li>{e(s)}</li>" for s in v["summary"])
     return (
         '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f'<title>{e(v["title"])}</title><style>{stylesheet()}{PAGE_CSS}</style></head><body><main class="solo">'
         f'<section class="slide cover"><div class="brand">{MARK}<span translate="no">DACARD</span></div><div class="meta">{meta_html}</div>'
-        f'<h1>{e(v["title"])}</h1><p class="lede">{e(v["lede"])}</p><p class="sub">{e(team)}</p>{decision}</section>'
+        f'<h1>{e(v["title"])}</h1><p class="answer">{e(v["answer"])}</p><ul class="five">{five}</ul>{decision}</section>'
+        '<details class="more"><summary>The full packet: the role, each candidate, fairness, the debrief steps and the evidence ledger</summary>'
+        f'<section class="slide"><div class="meta"><span>Role</span></div><p class="lede">{e(v["lede"])}</p><p class="sub">{e(team)}</p></section>'
         f'<section class="slide"><div class="meta"><span>Scorecard</span></div><h2>Every candidate, against the bar</h2>{scorecard(v)}'
         '<p class="sub">The overall score summarises; it does not decide. Read the competency rows and the evidence first.</p></section>'
         f"{sections}{drift}"
         f'<section class="slide"><div class="meta"><span>Fairness</span></div><h2>Fairness guardrails</h2><div class="rows">{guard_rows}</div></section>'
         f'<section class="slide"><div class="meta"><span>Calibration</span></div><h2>How the debrief runs</h2><ol class="steps">{steps}</ol>'
-        f'<div style="margin-top:28px">{ledger_table(ledger)}</div></section>'
+        f'<div style="margin-top:28px">{ledger_table(ledger)}</div></section></details>'
         f'<p class="foot">{e(v["foot"])}</p></main></body></html>\n'
     )

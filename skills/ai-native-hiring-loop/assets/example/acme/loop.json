@@ -4,11 +4,10 @@
   "role": {
     "title": "Senior Product Manager, AI assistant",
     "level": "Senior (L6)",
-    "team": "Acme Assist squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative."
+    "team": "Quoting squad, one of 12 squads at Acme (invoicing software for trades businesses, Series C, about 400 people). Illustrative."
   },
   "decision": {
-    "owner": "Jordan Vale",
-    "role": "Head of Product",
+    "owner": "Head of Product, Quoting squad",
     "by": "2026-11-23"
   },
   "outcomes": [
@@ -121,7 +120,7 @@
       "name": "Work sample: should drafted quotes auto-send?",
       "kind": "work_sample",
       "minutes": 90,
-      "task": "Acme Assist drafts quotes for plumbers and electricians from a job note and a parts list. A large customer asks for drafts to send without review. You get 40 anonymised, illustrative job notes with the drafts the assistant produced and the quotes the trade sent. In 90 minutes, write a one-page recommendation: what you would ship, the eval cases that would gate it, the cost per drafted quote, and which steps should not use a model. Using Claude or any other tool is allowed and expected; say where you used it.",
+      "task": "The Quoting squad's assistant drafts quotes for plumbers and electricians from a job note and a parts list. A large customer asks for drafts to send without review. You get 40 anonymised, illustrative job notes with the drafts the assistant produced and the quotes the trade sent. In 90 minutes, write a one-page recommendation: what you would ship, the eval cases that would gate it, the cost per drafted quote, and which steps should not use a model. Using Claude or any other tool is allowed and expected; say where you used it.",
       "criteria": [
         {
           "id": "W1",
